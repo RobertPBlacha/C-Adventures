@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdarg.h>
 #include <stdio.h>
 
 
@@ -31,9 +32,26 @@ largenumber *initLargeNumber() {
 	return large;
 }
 
+largenumber *initvLargeNumber(int arg_count, ...) {
+	va_list ap;
+	va_start(ap, arg_count);
+	unsigned int *values = calloc(arg_count+2, sizeof(unsigned int));
+	for(int i = 0; i < arg_count; i++) { 
+		*(values+i) = va_arg(ap, unsigned int);
+	}
+	va_end(ap);
+	largenumber *large = calloc(1, sizeof(largenumber));
+	large->size = arg_count + 2;
+	large->sign = 0;
+	large->num = values;	
+}
+
 void resize(largenumber *large, int add) { //Can both scale up and down
 	large->num = realloc(large->num, large->size + add);
+	unsigned int old = large->size;
 	large->size += add;
+	for(int i = old; i < old+add; i++)
+		*(large->num+i) = 0;
 }
 
 void carryOne(largenumber *large, unsigned int chunk) {//other functions should call resize before calling this one so there WILL be space
@@ -54,12 +72,53 @@ void addLargeNumber(largenumber *large, unsigned long add) {
 	*(unsigned long *)(large->num) = newLeast8;
 }
 
+unsigned int determineSize(unsigned int mult) {
+	unsigned int ret = 0; 
+	mult >>= 1; //multiplying by 1 should not increase size
+	while(mult) {
+		mult >>= 1;
+		ret += 1;
+	}
+	unsigned int res = ret/(sizeof(unsigned int)*8); //resize takes 4 bytes each call
+	if(res == 0 && ret > 0) 
+		return 1;
+	else 
+		return res;
+}
+
+void addTwoLargeNumbers(largenumber *addend, largenumber *addto) {
+	if(addend->size < addto->size)
+		resize(addend, addend->size - addto->size);
+	unsigned long cursor = 0;
+	unsigned int carry = 0;
+	for(unsigned int i = 0; i < addend->size; i++) {
+		cursor = (unsigned long)*(addend->num+i) + (unsigned long)*(addto->num+i) + (unsigned long)carry;
+		*(addend->num+i) = (unsigned int)cursor;
+		carry = (unsigned int)(cursor>>32);
+	}
+}	
+
+void multiplyLargeNumber(largenumber *large, unsigned int mult) {
+	resize(large, determineSize(mult));
+	unsigned long multiplicationCursor = 0;
+	unsigned int new = 0;
+	unsigned int carry = 0; //The product of two numbers <2^32 will be bounded by 2^64, but adding the carry to the next number could overflow, need to fix
+	for(int i = 0; *(large->num + i) || carry; i++) {
+		multiplicationCursor = (unsigned long)*(large->num+i) * (unsigned long)mult;
+		*(large->num+i) = (unsigned int)multiplicationCursor + carry;
+		carry = (unsigned int)(multiplicationCursor >> 32);
+		if(*(large->num+i) < (unsigned int)multiplicationCursor)
+			carry += 1; //Carry will be at most fffffffe, so adding one has 0 chance of overflow
+	}
+}
+//TODO Add multiplication of LargeNumbers
+
 int main() {
 //	printf("Library, do not run");
-	largenumber *l = initLargeNumber();
+	largenumber *l = initvLargeNumber(3, 0xffffffff, 0xffffffff, 0xffffffff);
+	largenumber *l2 = initvLargeNumber(2, 0xffffffff, 0x1);
 	displayLargeNum(l);
-	addLargeNumber(l, 0xffffffffffffffff);	
-	displayLargeNum(l);
-	addLargeNumber(l, 0xffffffffffffffff);	
+	displayLargeNum(l2);
+	addTwoLargeNumbers(l, l2);
 	displayLargeNum(l);
 }

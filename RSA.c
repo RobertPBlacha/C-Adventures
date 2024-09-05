@@ -155,11 +155,11 @@ int main() {
 	unsigned long fermat1 = fermatGeneratePrime(array);
 	unsigned long fermat2 = fermatGeneratePrime(array);
 	RSAGenerate(fermat1, fermat2);
-	char *encrypted = RSAEncrypt(plaintext);
-	printf("Encrypred: %s\n", encrypted);
-	char *decrypted = RSADecrypt(encrypted);
-	printf("Decrypted: %s\n", decrypted);
-	free(encrypted);
-	free(decrypted);
+	//char *encrypted = RSAEncrypt(plaintext);
+	//printf("Encrypred: %s\n", encrypted);
+	//char *decrypted = RSADecrypt(encrypted);
+	//printf("Decrypted: %s\n", decrypted);
+	//free(encrypted);
+	//free(decrypted);
 	free(array);
 }

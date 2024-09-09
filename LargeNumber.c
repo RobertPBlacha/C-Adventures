@@ -47,7 +47,7 @@ largenumber *initvLargeNumber(int arg_count, ...) {
 }
 
 void resize(largenumber *large, int add) { //Can both scale up and down
-	large->num = realloc(large->num, large->size + add);
+	large->num = realloc(large->num, sizeof(unsigned int) * (large->size + add));
 	unsigned int old = large->size;
 	large->size += add;
 	for(int i = old; i < old+add; i++)
@@ -111,14 +111,42 @@ void multiplyLargeNumber(largenumber *large, unsigned int mult) {
 			carry += 1; //Carry will be at most fffffffe, so adding one has 0 chance of overflow
 	}
 }
+
+void shiftLargeNumber(largenumber *large, unsigned int amount) {
+	resize(large, amount);
+	for(unsigned int i = large->size - 1; i-amount > 0; i--) {
+		*(large->num+i) = *(large->num+i - amount);
+	}
+	for(unsigned int i = amount-1; i != -1; i--) {
+		*(large->num+i) = 0;
+	}
+}
+void shiftDownLargeNumber(largenumber *large, unsigned int amount) {
+	for(unsigned int i = 0; i+amount != large->size; i++) {
+		*(large->num+i) = *(large->num+i + amount);
+	}
+	for(unsigned int i = amount; i != large->size; i++) {
+		*(large->num+i) = 0;
+	}
+	displayLargeNum(large);
+	resize(large, -1 * amount);
+}
 //TODO Add multiplication of LargeNumbers
+largenumber *multiplyTwoLargeNumbers(largenumber *base, largenumber *factor) {
+	//XY = XlYl2^n + ((Xl + Xr)(Yl + Yr) - XlYl - XrYr)2^n/2 + XrYr
+	largenumber *l = initLargeNumber();
+	resize(l, base->size * factor->size - l->size);
+	//multTwoLarge(base, factor, l);
+	return NULL;
+}
 
 int main() {
 //	printf("Library, do not run");
 	largenumber *l = initvLargeNumber(3, 0xffffffff, 0xffffffff, 0xffffffff);
-	largenumber *l2 = initvLargeNumber(2, 0xffffffff, 0x1);
 	displayLargeNum(l);
-	displayLargeNum(l2);
-	addTwoLargeNumbers(l, l2);
+	shiftLargeNumber(l, 2);
 	displayLargeNum(l);
+	shiftDownLargeNumber(l, 3);
+	displayLargeNum(l);
+
 }

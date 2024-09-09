@@ -151,7 +151,7 @@ int main() {
 	int* array = calloc(MAXARRSIZE, sizeof(int));
 	sieve(array); //array now has first MAXARRSIZE primes
 	char* plaintext = calloc(CIPHERSIZE, sizeof(unsigned long)); //needs size to be divisible by 8 for encryption
-	fgets(plaintext, CIPHERSIZE, stdin);
+	//fgets(plaintext, CIPHERSIZE, stdin);
 	unsigned long fermat1 = fermatGeneratePrime(array);
 	unsigned long fermat2 = fermatGeneratePrime(array);
 	RSAGenerate(fermat1, fermat2);

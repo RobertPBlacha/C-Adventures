@@ -117,6 +117,16 @@ void addTwoLargeNumbers(largenumber *addend, largenumber *addto) {
 	}
 }	
 
+void subTwoLargeNumbers(largenumber *addend, largenumber *addto) { // Just assumes addend > addto
+	unsigned int cursor = 0;
+	for(unsigned int i = 0; i < addto->size; i++) {
+		cursor = *(addend->num+i) - *(addto->num+i);
+		if(cursor > *(addend->num+i)) {
+			*(addend->num+i+1) -= 1;
+		}
+		*(addend->num+i) = cursor;
+	}
+}
 void multiplyLargeNumber(largenumber *large, unsigned int mult) {
 	resize(large, determineSize(mult));
 	unsigned long multiplicationCursor = 0;
@@ -167,7 +177,6 @@ largenumber *multiplyTwoLargeNumbers(largenumber *base, largenumber *factor) {
 	unsigned long resL = 0;
 	for(unsigned int i = 0; i < base->size; i++) {
 		for(unsigned int j = 0; j < factor->size; j++) {
-			printf("%x and %x\n", *(base->num+i), *(factor->num+j));
 			zeroLargeNumber(l, l->size);
 			resL = (unsigned long)*(base->num+i) * (unsigned long)*(factor->num+j);
 			*(l->num+i+j) = (unsigned int)resL;
@@ -179,19 +188,21 @@ largenumber *multiplyTwoLargeNumbers(largenumber *base, largenumber *factor) {
 	smartResize(res);
 	return res;
 }
+largenumber *modTwoLargeNumbers(largenumber *l, largenumber *mod) {
+	
+}
 
 int main() {
 //	printf("Library, do not run");
-	largenumber *l = initvLargeNumber(3, 0xffffffff, 0xffffffff, 0xffffffff);
+	largenumber *l = initvLargeNumber(3, 0xffffffff, 0x0, 0xffffffff);
 	largenumber *l2 = initvLargeNumber(3, 0x0, 0x2, 0x2);
-	largenumber *l3 = multiplyTwoLargeNumbers(l, l2);
-	printf("Multiplying\n");
+	printf("Subtracting\n");
 	displayLargeNum(l);
 	displayLargeNum(l2);
 	printf("Result\n");
-	displayLargeNum(l3);
+	subTwoLargeNumbers(l, l2);
+	displayLargeNum(l);
 
 	freeLarge(l);
 	freeLarge(l2);
-	freeLarge(l3);
 }

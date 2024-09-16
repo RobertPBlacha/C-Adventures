@@ -13,10 +13,10 @@ typedef struct {
 void displayLarge(unsigned int *num, int size) {
 	if(size) { 
 		displayLarge(num+1, size-1);
-		printf("%x ", *num);
+		printf("%08x ", *num);
 	}
 	else 
-		printf("%x ", 0);
+		printf("%08x ", 0);
 }
 
 void displayLargeNum(largenumber *large) {
@@ -30,6 +30,12 @@ largenumber *initLargeNumber() {
 	large->sign = 0;
 	large->num = calloc(large->size, sizeof(unsigned int));
 	return large;
+}
+largenumber *initSizedLargeNumber(unsigned int size) {
+	largenumber *large = calloc(1, sizeof(largenumber));
+	large->size = size;
+	large->sign = 0;
+	large->num = calloc(size, sizeof(unsigned int));
 }
 
 largenumber *initvLargeNumber(int arg_count, ...) {
@@ -46,6 +52,11 @@ largenumber *initvLargeNumber(int arg_count, ...) {
 	large->num = values;	
 }
 
+void freeLarge(largenumber *l) {
+	free(l->num);
+	free(l);
+}
+
 void resize(largenumber *large, int add) { //Can both scale up and down
 	large->num = realloc(large->num, sizeof(unsigned int) * (large->size + add));
 	unsigned int old = large->size;
@@ -54,6 +65,14 @@ void resize(largenumber *large, int add) { //Can both scale up and down
 		*(large->num+i) = 0;
 }
 
+void smartResize(largenumber *large) {
+	for(int i = large->size-1; i > 0; i--) {
+		if(*(large->num+i)) {
+			resize(large, i-large->size+1);
+			break;	
+		}
+	}
+}
 void carryOne(largenumber *large, unsigned int chunk) {//other functions should call resize before calling this one so there WILL be space
 	unsigned int before = *(large->num+chunk);
 	*(large->num+chunk) = before + 1;
@@ -112,6 +131,16 @@ void multiplyLargeNumber(largenumber *large, unsigned int mult) {
 	}
 }
 
+void zeroLargeNumber(largenumber *large, unsigned int size) { 
+	free(large->num);
+	large->num = calloc(size, sizeof(unsigned int));
+	if(!large->num) {
+		printf("Memerror, exiting\n");
+		exit(1);
+	}
+	large->size = size;
+}
+
 void shiftLargeNumber(largenumber *large, unsigned int amount) {
 	resize(large, amount);
 	for(unsigned int i = large->size - 1; i-amount > 0; i--) {
@@ -131,22 +160,38 @@ void shiftDownLargeNumber(largenumber *large, unsigned int amount) {
 	displayLargeNum(large);
 	resize(large, -1 * amount);
 }
-//TODO Add multiplication of LargeNumbers
 largenumber *multiplyTwoLargeNumbers(largenumber *base, largenumber *factor) {
-	//XY = XlYl2^n + ((Xl + Xr)(Yl + Yr) - XlYl - XrYr)2^n/2 + XrYr
-	largenumber *l = initLargeNumber();
-	resize(l, base->size * factor->size - l->size);
-	//multTwoLarge(base, factor, l);
-	return NULL;
+	largenumber *l = initSizedLargeNumber(base->size +factor->size);//Theoretically could cause overflow but unlikely for the sizes I'm going to use this library for
+	largenumber *res = initSizedLargeNumber(base->size + factor->size);
+	//Naive Multiplication, should change later to something not O(n^2)
+	unsigned long resL = 0;
+	for(unsigned int i = 0; i < base->size; i++) {
+		for(unsigned int j = 0; j < factor->size; j++) {
+			printf("%x and %x\n", *(base->num+i), *(factor->num+j));
+			zeroLargeNumber(l, l->size);
+			resL = (unsigned long)*(base->num+i) * (unsigned long)*(factor->num+j);
+			*(l->num+i+j) = (unsigned int)resL;
+			*(l->num+i+j+1) = (unsigned int)(resL>>32);
+			addTwoLargeNumbers(res, l);
+		}
+	}
+	freeLarge(l);
+	smartResize(res);
+	return res;
 }
 
 int main() {
 //	printf("Library, do not run");
 	largenumber *l = initvLargeNumber(3, 0xffffffff, 0xffffffff, 0xffffffff);
+	largenumber *l2 = initvLargeNumber(3, 0x0, 0x2, 0x2);
+	largenumber *l3 = multiplyTwoLargeNumbers(l, l2);
+	printf("Multiplying\n");
 	displayLargeNum(l);
-	shiftLargeNumber(l, 2);
-	displayLargeNum(l);
-	shiftDownLargeNumber(l, 3);
-	displayLargeNum(l);
+	displayLargeNum(l2);
+	printf("Result\n");
+	displayLargeNum(l3);
 
+	freeLarge(l);
+	freeLarge(l2);
+	freeLarge(l3);
 }

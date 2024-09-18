@@ -1,13 +1,14 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
+#include "LargeNumber.h"
 
-
-typedef struct {
+struct large {
 	unsigned int size; // in terms of 4 byte chunks
 	int sign; // 0 if positive, 1 if negative, can use 4 bytes wihtout changing struct size due to alignment
 	unsigned int *num;
-} largenumber;
+};
 
 
 void displayLarge(unsigned int *num, int size) {
@@ -36,6 +37,17 @@ largenumber *initSizedLargeNumber(unsigned int size) {
 	large->size = size;
 	large->sign = 0;
 	large->num = calloc(size, sizeof(unsigned int));
+}
+largenumber *initMemLargeNumber(unsigned int *arr) {
+	unsigned int i = 0;
+	while(*(arr+i)) //the chance that a random number will contain an all zero unsigned int is 2**-32
+		i += 1;
+	largenumber *l = calloc(1, sizeof(largenumber));
+	l->num = calloc(i , sizeof(unsigned int));
+	memcpy(l->num, arr, i*sizeof(unsigned int));
+	l->size = i;
+	l->sign = *(l->num+i-1) & 0x80000000;
+	return l;
 }
 
 largenumber *initvLargeNumber(int arg_count, ...) {
@@ -78,6 +90,14 @@ void carryOne(largenumber *large, unsigned int chunk) {//other functions should 
 	*(large->num+chunk) = before + 1;
 	if(before > *(large->num+chunk)) 
 		carryOne(large, chunk+1);
+}
+largenumber *copyLarge(largenumber *large) {
+	largenumber *res = calloc(1, sizeof(largenumber));
+	res->num = calloc(large->size, sizeof(unsigned int));
+	memcpy(res->num, large->num, large->size * sizeof(unsigned int));
+	res->size = large->size;
+	res->sign = large->sign;
+	return res;
 }
 
 void addLargeNumber(largenumber *large, unsigned long add) {
@@ -167,7 +187,6 @@ void shiftDownLargeNumber(largenumber *large, unsigned int amount) {
 	for(unsigned int i = amount; i != large->size; i++) {
 		*(large->num+i) = 0;
 	}
-	displayLargeNum(large);
 	resize(large, -1 * amount);
 }
 largenumber *multiplyTwoLargeNumbers(largenumber *base, largenumber *factor) {
@@ -188,21 +207,76 @@ largenumber *multiplyTwoLargeNumbers(largenumber *base, largenumber *factor) {
 	smartResize(res);
 	return res;
 }
+int equalsLarge(largenumber *l, largenumber *l2) {
+	if(l->size < l2->size)
+		return equalsLarge(l2, l);
+	for(int i = 0; i < l2->size; i++) {
+		if(*(l->num+i) != *(l2->num+i))
+			return 0;
+	}
+	return l->size > l2->size && l->num+l2->size;
+}
+int greaterThanLarge(largenumber *l, largenumber *l2) {
+	if(l->size < l2->size) 
+		if(equalsLarge(l, l2))
+			return 0;//handles case of l=l2 but different sizes
+		else
+			return !greaterThanLarge(l2, l);
+	for(int i = l->size-1; i >l2->size-1; i--) {
+		if(*(l->num+i))
+			return 1;
+	}
+	unsigned int a, b;
+	for(int i = l2->size-1; i > -1; i--) {
+		a = *(l->num+i);
+	        b = *(l2->num+i);
+		if(a!=b)
+			return a > b;
+	}
+	return 0;
+}	
 largenumber *modTwoLargeNumbers(largenumber *l, largenumber *mod) {
+	largenumber *c = copyLarge(l); 
+	largenumber *modC = copyLarge(mod);
+	while(greaterThanLarge(c, modC)) {
+		shiftLargeNumber(modC, 1); //mod = mod*2^32 until they are within the same block
+	}	
+	if(equalsLarge(modC, c)) {
+		freeLarge(c);
+		freeLarge(modC);
+		return initLargeNumber();
+	}
+	printf("Done Shifting\n");
+	if(!equalsLarge(modC, mod))
+		shiftDownLargeNumber(modC, 1);
+	subTwoLargeNumbers(c, modC);
+	while(greaterThanLarge(c, mod))
+		subTwoLargeNumbers(c, mod);
+	freeLarge(modC);
+	return c;
+}
+largenumber *fastModLarge(largenumber *l, largenumber *mod) {
+	//faster
 	
 }
-
 int main() {
 //	printf("Library, do not run");
-	largenumber *l = initvLargeNumber(3, 0xffffffff, 0x0, 0xffffffff);
-	largenumber *l2 = initvLargeNumber(3, 0x0, 0x2, 0x2);
-	printf("Subtracting\n");
+	FILE *rand = fopen("/dev/urandom", "r");
+	unsigned int num1[5];
+       	unsigned int num2[4];
+	fread(&num1, sizeof(unsigned int), 4, rand);	
+	fread(&num2, sizeof(unsigned int), 3, rand);	
+	num1[4] = 0;
+	num2[3] = 0;
+	largenumber *l = initMemLargeNumber(num1);
+	largenumber *l2 = initMemLargeNumber(num2);
+	printf("Modulo\n");
 	displayLargeNum(l);
 	displayLargeNum(l2);
 	printf("Result\n");
-	subTwoLargeNumbers(l, l2);
-	displayLargeNum(l);
-
+	largenumber *l3 = modTwoLargeNumbers(l, l2);
+	displayLargeNum(l3);
 	freeLarge(l);
 	freeLarge(l2);
+	freeLarge(l3);
 }

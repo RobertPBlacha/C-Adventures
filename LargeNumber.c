@@ -273,24 +273,3 @@ largenumber *fastModLarge(largenumber *l, largenumber *mod) {
 	//faster
 	
 }
-int main() {
-//	printf("Library, do not run");
-	FILE *rand = fopen("/dev/urandom", "r");
-	unsigned int num1[10];
-       	unsigned int num2[4];
-	fread(&num1, sizeof(unsigned int), 9, rand);	
-	fread(&num2, sizeof(unsigned int), 3, rand);	
-	num1[9] = 0;
-	num2[3] = 0;
-	largenumber *l = initMemLargeNumber(num1);
-	largenumber *l2 = initMemLargeNumber(num2);
-	printf("Modulo\n");
-	displayLargeNum(l);
-	displayLargeNum(l2);
-	printf("Result\n");
-	largenumber *l3 = modTwoLargeNumbers(l, l2);
-	displayLargeNum(l3);
-	freeLarge(l);
-	freeLarge(l2);
-	freeLarge(l3);
-}

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "LargeNumber.h"
 #include <stdlib.h>
 #define MAXARRSIZE 1000
 #define CIPHERSIZE 100

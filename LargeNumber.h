@@ -1,6 +1,8 @@
 #ifndef LARGENUMBER_H
 #define LARGENUMBER_H
 typedef struct large largenumber;
+largenumber *modTwoLargeNumbers(largenumber *, largenumber *);
+void granularShiftDown(largenumber *, unsigned int);
 void displayLarge(unsigned int *, int);
 void displayLargeNum(largenumber *);
 largenumber *initLargeNumber();

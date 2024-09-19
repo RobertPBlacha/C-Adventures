@@ -173,7 +173,7 @@ void zeroLargeNumber(largenumber *large, unsigned int size) {
 
 void shiftLargeNumber(largenumber *large, unsigned int amount) {
 	resize(large, amount);
-	for(unsigned int i = large->size - 1; i-amount > 0; i--) {
+	for(unsigned int i = large->size - 1; i-amount != -1; i--) {
 		*(large->num+i) = *(large->num+i - amount);
 	}
 	for(unsigned int i = amount-1; i != -1; i--) {
@@ -256,13 +256,15 @@ largenumber *modTwoLargeNumbers(largenumber *l, largenumber *mod) {
 		return initLargeNumber();
 	}
 	while(greaterThanLarge(c, mod)) {
-		while(greaterThanLarge(modC, c))
+		while(greaterThanLarge(modC, c)) {
+			if((*modC->num & 0xff)) {
+				printf("Unexpected Error in Large Num Library while calculating modulo, exitting\n");
+				displayLargeNum(modC);
+				exit(1);
+			}
 			granularShiftDown(modC, 1);
-		subTwoLargeNumbers(c, modC);
-		if(!(*modC->num && 0xff)) {
-			printf("Unexpected Error in Large Num Library while calculating modulo, exitting\n");
-			exit(1);
 		}
+		subTwoLargeNumbers(c, modC);
 	}
 	freeLarge(modC);
 	return c;
@@ -274,11 +276,11 @@ largenumber *fastModLarge(largenumber *l, largenumber *mod) {
 int main() {
 //	printf("Library, do not run");
 	FILE *rand = fopen("/dev/urandom", "r");
-	unsigned int num1[5];
+	unsigned int num1[10];
        	unsigned int num2[4];
-	fread(&num1, sizeof(unsigned int), 4, rand);	
+	fread(&num1, sizeof(unsigned int), 9, rand);	
 	fread(&num2, sizeof(unsigned int), 3, rand);	
-	num1[4] = 0;
+	num1[9] = 0;
 	num2[3] = 0;
 	largenumber *l = initMemLargeNumber(num1);
 	largenumber *l2 = initMemLargeNumber(num2);

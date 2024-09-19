@@ -235,6 +235,15 @@ int greaterThanLarge(largenumber *l, largenumber *l2) {
 	}
 	return 0;
 }	
+void granularShiftDown(largenumber *l, unsigned int i) { //shifts by chars
+	char *cast = (char *)(l->num);
+	unsigned int total = sizeof(unsigned int) * (l->size);
+	char * a = malloc(total);
+	memcpy(a, cast, total); //This memory passing is necessary because memcpy is undefined for overlapping segments (in this case it copied 4 bytes and then stopped)
+	memcpy(cast, a+i, total - i);
+	free(a);
+	*(cast+total-1)=0;
+}
 largenumber *modTwoLargeNumbers(largenumber *l, largenumber *mod) {
 	largenumber *c = copyLarge(l); 
 	largenumber *modC = copyLarge(mod);
@@ -246,12 +255,15 @@ largenumber *modTwoLargeNumbers(largenumber *l, largenumber *mod) {
 		freeLarge(modC);
 		return initLargeNumber();
 	}
-	printf("Done Shifting\n");
-	if(!equalsLarge(modC, mod))
-		shiftDownLargeNumber(modC, 1);
-	subTwoLargeNumbers(c, modC);
-	while(greaterThanLarge(c, mod))
-		subTwoLargeNumbers(c, mod);
+	while(greaterThanLarge(c, mod)) {
+		while(greaterThanLarge(modC, c))
+			granularShiftDown(modC, 1);
+		subTwoLargeNumbers(c, modC);
+		if(!(*modC->num && 0xff)) {
+			printf("Unexpected Error in Large Num Library while calculating modulo, exitting\n");
+			exit(1);
+		}
+	}
 	freeLarge(modC);
 	return c;
 }

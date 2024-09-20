@@ -190,7 +190,7 @@ void shiftDownLargeNumber(largenumber *large, unsigned int amount) {
 	resize(large, -1 * amount);
 }
 largenumber *multiplyTwoLargeNumbers(largenumber *base, largenumber *factor) {
-	largenumber *l = initSizedLargeNumber(base->size +factor->size);//Theoretically could cause overflow but unlikely for the sizes I'm going to use this library for
+	largenumber *l = initSizedLargeNumber(base->size+factor->size); //Theoretically could cause overflow but unlikely for the sizes I'm going to use this library for
 	largenumber *res = initSizedLargeNumber(base->size + factor->size);
 	//Naive Multiplication, should change later to something not O(n^2)
 	unsigned long resL = 0;
@@ -244,6 +244,12 @@ void granularShiftDown(largenumber *l, unsigned int i) { //shifts by chars
 	free(a);
 	*(cast+total-1)=0;
 }
+void setLargeEqual(largenumber *dest, largenumber *src) {
+	free(dest->num);
+	dest->num = calloc(src->size, sizeof(unsigned int));
+	memcpy(dest->num, src->num, sizeof(unsigned int) * src->size);
+	dest->size = src->size;
+}
 largenumber *modTwoLargeNumbers(largenumber *l, largenumber *mod) {
 	largenumber *c = copyLarge(l); 
 	largenumber *modC = copyLarge(mod);
@@ -269,7 +275,55 @@ largenumber *modTwoLargeNumbers(largenumber *l, largenumber *mod) {
 	freeLarge(modC);
 	return c;
 }
-largenumber *fastModLarge(largenumber *l, largenumber *mod) {
-	//faster
-	
+largenumber *largeModPow(largenumber *l, largenumber *pow, largenumber *mod) {	
+	largenumber *res = initvLargeNumber(2, 0x1, 0);
+	largenumber *powC = copyLarge(pow);
+	largenumber *lC = copyLarge(l);
+	largenumber *zero = initLargeNumber();
+	largenumber *work;
+	unsigned char LSC;
+	work = modTwoLargeNumbers(lC, mod);
+	setLargeEqual(lC, work);
+	freeLarge(work);
+	while(greaterThanLarge(powC, zero)) {
+		LSC = (unsigned char)(*(powC->num));
+		for (int i = 0; i < 8; i++) {
+			if (LSC & 1) {
+				work = multiplyTwoLargeNumbers(res, lC);
+				setLargeEqual(res, work);//three lines needed for memory reasons
+				freeLarge(work);	
+				work = modTwoLargeNumbers(res, mod);
+				setLargeEqual(res, work);
+				freeLarge(work);
+			}
+			work = multiplyTwoLargeNumbers(lC, lC);
+			setLargeEqual(lC, work);
+			freeLarge(work);
+
+			work = modTwoLargeNumbers(lC, mod);
+			setLargeEqual(lC, work);
+			freeLarge(work);
+
+			LSC >>= 1;
+		}
+		granularShiftDown(powC, 1);
+	}
+	return res;
+}
+
+int main() {
+	FILE *rand = fopen("/dev/urandom", "r");
+	unsigned int a[4], b[2], m[3];
+       	fread(a, sizeof(unsigned int), 3, rand);	
+       	fread(b, sizeof(unsigned int), 1, rand);	
+       	fread(m, sizeof(unsigned int), 2, rand);	
+	largenumber *l1 = initMemLargeNumber(a);
+	largenumber *l2 = initMemLargeNumber(b);
+	largenumber *lm = initMemLargeNumber(m);
+	displayLargeNum(l1);
+	displayLargeNum(l2);
+	displayLargeNum(lm);
+	largenumber *l3 = largeModPow(l1, l2, lm);
+	printf("RES\n");
+	displayLargeNum(l3);
 }

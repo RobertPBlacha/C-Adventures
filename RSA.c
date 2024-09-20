@@ -4,13 +4,9 @@
 #define MAXARRSIZE 1000
 #define CIPHERSIZE 100
 #define fermatRepeat 50
-typedef struct {
-	unsigned long second64; // Little Endian
-	unsigned long first64;
-} largelong;
 
 unsigned long n, e, d;
-
+largenumber * n2, *e2, *d2;
 void sieve(int* array) {
 	int* empty = array;
 	int check = 1;
@@ -35,7 +31,6 @@ void sieve(int* array) {
 unsigned long modPow(unsigned long a, unsigned long no, unsigned long mod) {
 	unsigned long res = 1; //error here where overflow happening despite everything having enough(?) space
 	a = a % mod;
-	if(mod > 0xffffffffl) { printf("mod big\n"); }
 	if (a == 0) return 2;
 	while(no > 0) {
 		if(n & 1) {
@@ -44,8 +39,6 @@ unsigned long modPow(unsigned long a, unsigned long no, unsigned long mod) {
 			res = (res * a) % mod;
 		}
 		no = no >> 1;
-		if (a*a < a)
-			printf("Overflow in a*a");
 		a = (a*a) % mod;
 	}
 	return res;

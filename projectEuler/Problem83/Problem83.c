@@ -60,13 +60,6 @@ node *addToList(unsigned int position, unsigned int *matrix, node *list, node* p
 }
 
 
-unsigned long sum(node *done, unsigned int* matrix) {
-	if(done->parent) {
-		return sum(done->parent, matrix) + matrix[done->position];
-	}
-	return matrix[done->position];
-}
-
 unsigned long aStarSearch(unsigned int *matrix) {
 	unsigned int cursorX = 0, cursorY = 0;
 	unsigned long Path = 0;
@@ -79,7 +72,7 @@ unsigned long aStarSearch(unsigned int *matrix) {
 		cursorX = open->position % MATSIZE;
 		cursorY = open->position / MATSIZE;
 		if(cursorX == MATSIZE-1 && cursorY == MATSIZE-1) {//solution found
-			addToList((MATSIZE-1)*(MATSIZE-1), matrix, open, open);
+			addToList(cursorX + cursorY*MATSIZE, matrix, open, open);
 			Path = open->cost;
 			while(intermediary=open) {
 				open = open->next;
@@ -95,12 +88,17 @@ unsigned long aStarSearch(unsigned int *matrix) {
 		open = open->next;
 		intermediary->next = closed;
 		closed = intermediary;
-		pos = cursorX+1 + MATSIZE * cursorY;
-		
+		pos = cursorX+1 + MATSIZE * cursorY;	
 		if(!inside(pos, closed) && cursorX < MATSIZE-1)
 			addToList(pos, matrix, open, intermediary);
 		pos = cursorX + MATSIZE * (cursorY+1);
 		if(!inside(pos, closed) && cursorY < MATSIZE-1) 
+			addToList(pos, matrix, open, intermediary);
+		pos = cursorX + MATSIZE * (cursorY-1);
+		if(!inside(pos, closed) && cursorY > 0) 
+			addToList(pos, matrix, open, intermediary);
+		pos = cursorX-1 + MATSIZE * (cursorY);
+		if(!inside(pos, closed) && cursorX > 0) 
 			addToList(pos, matrix, open, intermediary);
 	}
 }

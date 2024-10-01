@@ -118,8 +118,8 @@ unsigned int *initArray() {
 	unsigned int *matrix = malloc(sizeof(unsigned int) * MATSIZE * MATSIZE);
 	for(unsigned int i = 0; i < MATSIZE*MATSIZE; i++) {
 		fscanf(mat, "%u, ", &matrix[i]);
-		if(matrix[i] > average) {
-			average += matrix[i];
+		if(matrix[i] < average || !i) {
+			average = matrix[i];
 		}
 	}
 	average /= MATSIZE;
@@ -128,7 +128,6 @@ unsigned int *initArray() {
 
 int main() {
 	unsigned int* matrix = initArray();
-	// Now that the matrix is initialized and the average is calculated we can use A* to search
 	printf("%lu\n", aStarSearch(matrix));
 	free(matrix);
 	exit(0);

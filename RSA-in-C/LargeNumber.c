@@ -292,8 +292,6 @@ largenumber *divTwoLargeNumbers(largenumber *l, largenumber *mod) {
                 shiftLargeNumber(modC, 1); //mod = mod*2^32 until they are within the same block
 		shift += 32;
         }
-	displayLargeNum(c);
-	displayLargeNum(modC);
         if(equalsLarge(modC, c)) {
                 freeLarge(c);
                 freeLarge(modC);
@@ -351,39 +349,50 @@ largenumber *largeModPow(largenumber *l, largenumber *pow, largenumber *mod) {
 	}
 	return res;
 }
-void eulerExtended(largenumber *a, largenumber *b, largenumber *x, largenumber *y, largenumber *zero) { //zero used for checks
+void eulerExtended(largenumber *a, largenumber *b, largenumber **x, largenumber **y, largenumber *zero, largenumber *mod) { //zero used for checks
 	if(equalsLarge(zero, a)) {
-		addLargeNumber(a, 1);
+		*x = initvLargeNumber(1, 0);
+		*y = initvLargeNumber(1, 1);
 		return;
 	}
+	largenumber *x1, *y1;
 	largenumber *b2 = modTwoLargeNumbers(b, a);
 	largenumber *scratch;
-	b = copyLarge(b2);
-	eulerExtended(b, a, x, y, zero);
+	eulerExtended(b2, a, &x1, &y1, zero, mod); // now x1 and y1 have values
 	b2 = divTwoLargeNumbers(b, a);
-	scratch = multiplyLargeNumber(b2, x);
-	if
-	subTwoLargeNumbers(y, x);
+	scratch = multiplyTwoLargeNumbers(b2, x1);
+	while (!greaterThanLarge(y1, scratch) && !equalsLarge(y1, scratch)) {
+		addTwoLargeNumbers(y1, mod);
+	}
+	subTwoLargeNumbers(y1, scratch);
+	*y = copyLarge(x1);
+	*x = copyLarge(y1);
 	// x = y - (b/a) * x
-	
 	freeLarge(b2);
+	freeLarge(scratch);
+	freeLarge(x1);
+	freeLarge(y1);
 }
-largenumber *modularInverse(largenumber *e, largenumber *mod) { //Assumes whatever you send it has a mod inv
+largenumber *modInv(largenumber *e, largenumber *mod) { //Assumes whatever you send it has a mod inv
 	largenumber *x = initLargeNumber();
 	largenumber *y = initLargeNumber();
 	largenumber *z = initLargeNumber();
-	eulerExtended(e, mod, x, y, z);
+	eulerExtended(e, mod, &x, &y, z, mod);
+
+	freeLarge(y);
+	freeLarge(z);
+	return x;
 }
 int main() {
-	FILE *rand = fopen("/dev/urandom", "r");
+	/*FILE *rand = fopen("/dev/urandom", "r");
 	unsigned int a[4], b[2], m[3];
        	fread(a, sizeof(unsigned int), 3, rand);	
-       	fread(b, sizeof(unsigned int), 1, rand);	
-	largenumber *l1 = initMemLargeNumber(a);
-	largenumber *l2 = initMemLargeNumber(b);
+       	fread(b, sizeof(unsigned int), 1, rand);*/	
+	largenumber *l1 = initvLargeNumber(1, 5);
+	largenumber *l2 = initvLargeNumber(1, 1001);
 	displayLargeNum(l1);
 	displayLargeNum(l2);
-	largenumber *l3 = divTwoLargeNumbers(l1, l2);
+	largenumber *l3 = modInv(l1, l2);
 	printf("RES\n");
 	displayLargeNum(l3);
 }

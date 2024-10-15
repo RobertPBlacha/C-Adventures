@@ -5,8 +5,7 @@
 #include "LargeNumber.h"
 
 struct large {
-	unsigned int size; // in terms of 4 byte chunks
-	int sign; // 0 if positive, 1 if negative, can use 4 bytes wihtout changing struct size due to alignment
+	unsigned long size; // in terms of 4 byte chunks
 	unsigned int *num;
 };
 
@@ -28,14 +27,12 @@ void displayLargeNum(largenumber *large) {
 largenumber *initLargeNumber() {
 	largenumber *large = calloc(1, sizeof(largenumber));
 	large->size = 4; //smallest it should ever be
-	large->sign = 0;
 	large->num = calloc(large->size, sizeof(unsigned int));
 	return large;
 }
 largenumber *initSizedLargeNumber(unsigned int size) {
 	largenumber *large = calloc(1, sizeof(largenumber));
 	large->size = size;
-	large->sign = 0;
 	large->num = calloc(size, sizeof(unsigned int));
 }
 largenumber *initMemLargeNumber(unsigned int *arr) {
@@ -46,7 +43,6 @@ largenumber *initMemLargeNumber(unsigned int *arr) {
 	l->num = calloc(i , sizeof(unsigned int));
 	memcpy(l->num, arr, i*sizeof(unsigned int));
 	l->size = i;
-	l->sign = *(l->num+i-1) & 0x80000000;
 	return l;
 }
 
@@ -60,7 +56,6 @@ largenumber *initvLargeNumber(int arg_count, ...) {
 	va_end(ap);
 	largenumber *large = calloc(1, sizeof(largenumber));
 	large->size = arg_count + 2;
-	large->sign = 0;
 	large->num = values;	
 }
 
@@ -69,7 +64,7 @@ void freeLarge(largenumber *l) {
 	free(l);
 }
 
-void resize(largenumber *large, int add) { //Can both scale up and down
+void resize(largenumber *large, long add) { //Can both scale up and down
 	large->num = realloc(large->num, sizeof(unsigned int) * (large->size + add));
 	unsigned int old = large->size;
 	large->size += add;
@@ -96,7 +91,6 @@ largenumber *copyLarge(largenumber *large) {
 	res->num = calloc(large->size, sizeof(unsigned int));
 	memcpy(res->num, large->num, large->size * sizeof(unsigned int));
 	res->size = large->size;
-	res->sign = large->sign;
 	return res;
 }
 
@@ -127,7 +121,7 @@ unsigned int determineSize(unsigned int mult) {
 
 void addTwoLargeNumbers(largenumber *addend, largenumber *addto) {
 	if(addend->size < addto->size)
-		resize(addend, addend->size - addto->size);
+		resize(addend, addto->size - addend->size);
 	unsigned long cursor = 0;
 	unsigned int carry = 0;
 	for(unsigned int i = 0; i < addend->size; i++) {
@@ -136,10 +130,26 @@ void addTwoLargeNumbers(largenumber *addend, largenumber *addto) {
 		carry = (unsigned int)(cursor>>32);
 	}
 }	
-
+void subLargeNumber(largenumber *addend, unsigned int sub) {
+	unsigned int cursor = 0;
+	for(unsigned int i = 0; i < addend->size; i++) {
+		cursor = *(addend->num+i) - sub;
+		if(cursor > *(addend->num+i)) {
+			*(addend->num+i+1) -= 1;
+			*(addend->num+i) = cursor;
+		}
+		else {
+			*(addend->num+i) = cursor;
+			break;
+		}
+	}
+}
 void subTwoLargeNumbers(largenumber *addend, largenumber *addto) { // Just assumes addend > addto
 	unsigned int cursor = 0;
-	for(unsigned int i = 0; i < addto->size; i++) {
+	for(unsigned int i = 0; i < addto->size && i < addend->size; i++) {
+		if(!*(addto->num+i) && !*(addend->num+i)) {
+			break;
+		}
 		cursor = *(addend->num+i) - *(addto->num+i);
 		if(cursor > *(addend->num+i)) {
 			*(addend->num+i+1) -= 1;
@@ -244,18 +254,21 @@ void granularShiftDown(largenumber *l, unsigned int i) { //shifts by chars
 	memcpy(cast, a+i, total - i);
 	free(a);
 	*(cast+total-1)=0;
+	smartResize(l);
 }
 void granularShiftUp(largenumber *l, unsigned int i) { //shifts by chars
 	if(*(l->num+l->size-1)) {
 		resize(l, 1);
 	}
         char *cast = (char *)(l->num);
-        unsigned int total = sizeof(unsigned int) * (l->size);
-        char * a = malloc(total);
+        unsigned int total = sizeof(unsigned int) * (l->size-1);
+        char * a = calloc(sizeof(char), total);
         memcpy(a, cast, total); //This memory passing is necessary because memcpy is undefined for overlapping segments (in this case it copied 4 bytes and then stopped)
         memcpy(cast+i, a, total);
         free(a);
-        *(cast)=0;
+	for(int j = 0; j < i; j++) {
+        	*(cast+j)=0;
+	}
 }
 void setLargeEqual(largenumber *dest, largenumber *src) {
 	free(dest->num);
@@ -274,7 +287,7 @@ largenumber *modTwoLargeNumbers(largenumber *l, largenumber *mod) {
 		freeLarge(modC);
 		return initLargeNumber();
 	}
-	while(greaterThanLarge(c, mod)) {
+	while(greaterThanLarge(c, mod) || equalsLarge(c, mod)) {
 		while(greaterThanLarge(modC, c)) {
 			granularShiftDown(modC, 1);
 		}
@@ -287,30 +300,34 @@ largenumber *divTwoLargeNumbers(largenumber *l, largenumber *mod) {
         largenumber *c = copyLarge(l);
         largenumber *modC = copyLarge(mod);
 	largenumber *ret = initLargeNumber();
+	largenumber *zero = initLargeNumber();
 	unsigned long shift = 0;
         while(greaterThanLarge(c, modC)) {
                 shiftLargeNumber(modC, 1); //mod = mod*2^32 until they are within the same block
-		shift += 32;
+		shift += 1;
         }
         if(equalsLarge(modC, c)) {
                 freeLarge(c);
                 freeLarge(modC);
-		addLargeNumber(ret, 1);
-		shiftLargeNumber(ret, shift >> 5);
+		addLargeNumber(ret, 1); 
+		shiftLargeNumber(ret, shift);
                 return ret;
         }
 	// We now know the size of the return value
-	resize(ret, shift >> 32 - ret->size);
+	resize(ret, shift/sizeof(unsigned int)+1);
         while(greaterThanLarge(c, mod)) {
-                while(greaterThanLarge(modC, c)) {
+                while(greaterThanLarge(modC, c) && !equalsLarge(modC, c)) {
                         granularShiftDown(modC, 1);
-			granularShiftUp(ret, 1);
+			if(!equalsLarge(ret, zero)) {
+				granularShiftUp(ret, 1);
+			}
                 }
                 subTwoLargeNumbers(c, modC);
 		addLargeNumber(ret, 1);
         }
         freeLarge(modC);
 	freeLarge(c);
+	free(zero);
         return ret;
 }
 
@@ -347,6 +364,9 @@ largenumber *largeModPow(largenumber *l, largenumber *pow, largenumber *mod) {
 		}
 		granularShiftDown(powC, 1);
 	}
+	freeLarge(powC);
+	freeLarge(lC);
+	freeLarge(zero);
 	return res;
 }
 void eulerExtended(largenumber *a, largenumber *b, largenumber **x, largenumber **y, largenumber *zero, largenumber *mod) { //zero used for checks
@@ -361,11 +381,14 @@ void eulerExtended(largenumber *a, largenumber *b, largenumber **x, largenumber 
 	eulerExtended(b2, a, &x1, &y1, zero, mod); // now x1 and y1 have values
 	b2 = divTwoLargeNumbers(b, a);
 	scratch = multiplyTwoLargeNumbers(b2, x1);
-	while (!greaterThanLarge(y1, scratch) && !equalsLarge(y1, scratch)) {
+	*y = copyLarge(x1);
+	freeLarge(x1);
+	x1 = scratch;
+	scratch = modTwoLargeNumbers(x1, mod);
+	while (!greaterThanLarge(y1, scratch)) {
 		addTwoLargeNumbers(y1, mod);
 	}
 	subTwoLargeNumbers(y1, scratch);
-	*y = copyLarge(x1);
 	*x = copyLarge(y1);
 	// x = y - (b/a) * x
 	freeLarge(b2);
@@ -378,21 +401,21 @@ largenumber *modInv(largenumber *e, largenumber *mod) { //Assumes whatever you s
 	largenumber *y = initLargeNumber();
 	largenumber *z = initLargeNumber();
 	eulerExtended(e, mod, &x, &y, z, mod);
-
 	freeLarge(y);
 	freeLarge(z);
 	return x;
 }
+/*
 int main() {
-	/*FILE *rand = fopen("/dev/urandom", "r");
-	unsigned int a[4], b[2], m[3];
-       	fread(a, sizeof(unsigned int), 3, rand);	
-       	fread(b, sizeof(unsigned int), 1, rand);*/	
-	largenumber *l1 = initvLargeNumber(1, 5);
-	largenumber *l2 = initvLargeNumber(1, 1001);
+	//FILE *rand = fopen("/dev/urandom", "r");
+	//unsigned int a[4], b[2], m[3];
+       	//fread(a, sizeof(unsigned int), 3, rand);	
+       	//fread(b, sizeof(unsigned int), 1, rand);	
+	largenumber *l1 = initvLargeNumber(1, 4);
+	largenumber *l2 = initvLargeNumber(1, 2);
 	displayLargeNum(l1);
 	displayLargeNum(l2);
-	largenumber *l3 = modInv(l1, l2);
+	largenumber *l3 = modTwoLargeNumbers(l1, l2);
 	printf("RES\n");
 	displayLargeNum(l3);
-}
+}*/

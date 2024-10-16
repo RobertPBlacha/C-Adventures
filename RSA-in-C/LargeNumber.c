@@ -45,7 +45,13 @@ largenumber *initMemLargeNumber(unsigned int *arr) {
 	l->size = i;
 	return l;
 }
-
+largenumber *initSizedMemLargeNumber(unsigned int *arr, unsigned int size) {
+	largenumber *l = calloc(1, sizeof(largenumber));
+	l->num = calloc(size , sizeof(unsigned int));
+	memcpy(l->num, arr, size*sizeof(unsigned int));
+	l->size = size;
+	return l;
+}
 largenumber *initvLargeNumber(int arg_count, ...) {
 	va_list ap;
 	va_start(ap, arg_count);
@@ -146,10 +152,9 @@ void subLargeNumber(largenumber *addend, unsigned int sub) {
 }
 void subTwoLargeNumbers(largenumber *addend, largenumber *addto) { // Just assumes addend > addto
 	unsigned int cursor = 0;
+	smartResize(addend);
+	smartResize(addto);
 	for(unsigned int i = 0; i < addto->size && i < addend->size; i++) {
-		if(!*(addto->num+i) && !*(addend->num+i)) {
-			break;
-		}
 		cursor = *(addend->num+i) - *(addto->num+i);
 		if(cursor > *(addend->num+i)) {
 			*(addend->num+i+1) -= 1;
@@ -228,6 +233,8 @@ int equalsLarge(largenumber *l, largenumber *l2) {
 	return l->size == l2->size || (l->size > l2->size && !*(l->num+l2->size));
 }
 int greaterThanLarge(largenumber *l, largenumber *l2) {
+	smartResize(l);
+	smartResize(l2);
 	if(l->size < l2->size) 
 		if(equalsLarge(l, l2))
 			return 0;//handles case of l=l2 but different sizes
@@ -327,7 +334,7 @@ largenumber *divTwoLargeNumbers(largenumber *l, largenumber *mod) {
         }
         freeLarge(modC);
 	freeLarge(c);
-	free(zero);
+	freeLarge(zero);
         return ret;
 }
 
@@ -379,6 +386,7 @@ void eulerExtended(largenumber *a, largenumber *b, largenumber **x, largenumber 
 	largenumber *b2 = modTwoLargeNumbers(b, a);
 	largenumber *scratch;
 	eulerExtended(b2, a, &x1, &y1, zero, mod); // now x1 and y1 have values
+	freeLarge(b2);
 	b2 = divTwoLargeNumbers(b, a);
 	scratch = multiplyTwoLargeNumbers(b2, x1);
 	*y = copyLarge(x1);
@@ -396,6 +404,25 @@ void eulerExtended(largenumber *a, largenumber *b, largenumber **x, largenumber 
 	freeLarge(x1);
 	freeLarge(y1);
 }
+unsigned long byteSize(largenumber *n) {
+	smartResize(n); //guarantees n has value /kinda/
+	int mask = 0x80000000;
+	int bytes = 4;
+	while(1) {
+		if(*(n->num+n->size-1) & mask) {
+			return n->size*sizeof(unsigned int)+bytes;
+		}
+		mask >>= 1;
+		if(0xff << ((bytes-1)*8) & mask)
+		       bytes -= 1;	
+	}
+}
+char *charRep(largenumber *a, int blockSize) {
+	if(a->size < 1+blockSize/4) {
+		resize(a, 1+blockSize/4 - a->size);
+	}
+	return (char *)a->num;
+}
 largenumber *modInv(largenumber *e, largenumber *mod) { //Assumes whatever you send it has a mod inv
 	largenumber *x = initLargeNumber();
 	largenumber *y = initLargeNumber();
@@ -405,17 +432,3 @@ largenumber *modInv(largenumber *e, largenumber *mod) { //Assumes whatever you s
 	freeLarge(z);
 	return x;
 }
-/*
-int main() {
-	//FILE *rand = fopen("/dev/urandom", "r");
-	//unsigned int a[4], b[2], m[3];
-       	//fread(a, sizeof(unsigned int), 3, rand);	
-       	//fread(b, sizeof(unsigned int), 1, rand);	
-	largenumber *l1 = initvLargeNumber(1, 4);
-	largenumber *l2 = initvLargeNumber(1, 2);
-	displayLargeNum(l1);
-	displayLargeNum(l2);
-	largenumber *l3 = modTwoLargeNumbers(l1, l2);
-	printf("RES\n");
-	displayLargeNum(l3);
-}*/

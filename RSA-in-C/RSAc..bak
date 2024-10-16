@@ -1,9 +1,8 @@
 #include <stdio.h>
 #include "LargeNumber.h"
 #include <stdlib.h>
-#include <string.h>
 #define MAXARRSIZE 1000
-#define PRIMESIZE 10
+#define PRIMESIZE 5
 #define CIPHERSIZE 100
 #define fermatRepeat 10
 
@@ -68,9 +67,6 @@ largenumber *fermatGeneratePrime(largenumber **primes) {
 	while(!prime) {
 		guessMem[PRIMESIZE] = 0; //Chance of needing to set less than this to zero is negligible
 		fread(guessMem, sizeof(unsigned int), PRIMESIZE, rand);
-		if(!(guessMem[PRIMESIZE-1] & 0x80000000 && guessMem[PRIMESIZE-1] & 0x40000000)) {
-			continue;
-		}
 		guess = initMemLargeNumber(guessMem);
 		// guess is n in a^n-1 = 1 mod n, generate guesses for a
 		prime = 1;
@@ -145,6 +141,7 @@ unsigned long modInvPrimitive(unsigned long a, unsigned long m) {
 
 void RSAGenerate(largenumber *q, largenumber *p) {
 	// both p and q are going to be < 2^32, therefore their product will be < 2^64
+	printf("RSA TIME\n");
 	n2= multiplyTwoLargeNumbers(p, q);
 	subLargeNumber(p, 1);
 	subLargeNumber(q, 1);
@@ -165,21 +162,26 @@ void RSAGenerate(largenumber *q, largenumber *p) {
 	displayLargeNum(n2);
 }
 
-char *RSACrypt(char *string, int blocks, int blockSize, largenumber *key) {
+char *RSAEncrypt(char *string) {
 	// Change to largenumber *
-	char *res = calloc(blocks+1, blockSize); //+1 handles null termination
-	int i = 0;
-	while(i < blocks) {
-		largenumber *l = initSizedMemLargeNumber((unsigned int *)(string+(i*blockSize)), blockSize/sizeof(unsigned int));
-		largenumber *write = largeModPow(l, key, n2);
-		char *stringWriter = charRep(write, blockSize);
-		memcpy(res+i*blockSize, stringWriter, blockSize);
-		i += 1;
-		freeLarge(write);
-		free(l);
-	}
+	largenumber *l = initMemLargeNumber((unsigned int *)string);
+	largenumber *write = largeModPow(l, e2, n2);
+	char *stringWriter = charRep(write);
 	
-	return res;
+	free(l);
+	free(write); //free instead of freeLarge so that you maintain the string buffers
+	return (char *)stringWriter;
+}
+
+char *RSADecrypt(char *string) {
+	// Change to largenumber *
+	largenumber *l = initMemLargeNumber((unsigned int *)string);
+	largenumber *write = largeModPow(l, d2, n2);
+	char *stringWriter = charRep(write);
+	
+	free(l);
+	free(write); //free instead of freeLarge so that you maintain the string buffers
+	return (char *)stringWriter;
 }
 
 int main() {
@@ -187,25 +189,15 @@ int main() {
 	sieve(array); //array now has first MAXARRSIZE primes
 	largenumber *fermat1 = fermatGeneratePrime(array);
 	largenumber *fermat2 = fermatGeneratePrime(array);
+	displayLargeNum(fermat1);
+	displayLargeNum(fermat2);
 	RSAGenerate(fermat1, fermat2);
-	unsigned long blocks = 1;
-	unsigned long fullBlock = sizeof(unsigned int)*PRIMESIZE*2; // Need to solve problem of block plaintext > N
-	char *plaintext = calloc(sizeof(unsigned int), fullBlock + 1); //need +1 because of fgets null terminate
-	plaintext = fgets(plaintext, fullBlock+1, stdin);
-	unsigned int c, len;
-	while((c = getc(stdin)) && c != '\n' && c != EOF && c != 0x1) {
-		plaintext = realloc(plaintext, (blocks+1)*fullBlock+1);
-		fgets(plaintext+blocks*fullBlock+1, fullBlock, stdin);
-		*(plaintext+blocks*fullBlock) = c;
-		len = strlen(plaintext+blocks*fullBlock);
-		for(int i = len; i < fullBlock; i++) {
-			*(plaintext+blocks*fullBlock+i) = 0;
-		}
-		blocks+=1;
-	}
-	char *encrypted = RSACrypt(plaintext, blocks, fullBlock, e2);
-	printf("Encrypted: %s\n", encrypted);
-	char *decrypted = RSACrypt(encrypted, blocks, fullBlock, d2);
+	char *plaintext = calloc(sizeof(unsigned int), PRIMESIZE*2);
+	fgets(plaintext, sizeof(unsigned int)*(PRIMESIZE*2-1), stdin);
+	printf("%i\n", getc(stdin));
+	char *encrypted = RSAEncrypt(plaintext);
+	printf("Encrypred: %s\n", encrypted);
+	char *decrypted = RSADecrypt(encrypted);
 	printf("Decrypted: %s\n", decrypted);
 	free(encrypted);
 	free(decrypted);

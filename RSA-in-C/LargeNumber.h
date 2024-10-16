@@ -31,5 +31,8 @@ largenumber *modTwoLargeNumbers(largenumber *, largenumber *);
 largenumber *divTwoLargeNumbers(largenumber *, largenumber *);
 largenumber *largeModPow(largenumber *, largenumber *, largenumber *);
 void eulerExtended(largenumber *, largenumber *, largenumber **, largenumber **, largenumber *, largenumber *);
+char *charRep(largenumber *, int);
+largenumber *initSizedMemLargeNumber(unsigned int *, unsigned int);
+unsigned long byteSize(largenumber *);
 largenumber *modInv(largenumber *, largenumber *);
 #endif

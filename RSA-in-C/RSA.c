@@ -2,12 +2,17 @@
 #include "LargeNumber.h"
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
+#include <semaphore.h>
 #define MAXARRSIZE 1000
-#define PRIMESIZE 10
+#define THREADCOUNT 8
+#define PRIMESIZE 16
 #define CIPHERSIZE 100
 #define fermatRepeat 10
 
 unsigned long n, e, d;
+sem_t sem_primes;
+int neededPrimes;
 largenumber * n2, *e2, *d2;
 void sieve(largenumber **array) {
 	largenumber** empty = array;
@@ -56,7 +61,8 @@ unsigned long modPow(unsigned long a, unsigned long no, unsigned long mod) {
 	return res;
 }
 
-largenumber *fermatGeneratePrime(largenumber **primes) {
+void *fermatGeneratePrime(void *primesPTR) {
+	largenumber **primes = (largenumber **)primesPTR;
 	FILE *rand = fopen("/dev/urandom", "r");
 	int prime = 0;
 	largenumber *zero = initLargeNumber();
@@ -68,11 +74,14 @@ largenumber *fermatGeneratePrime(largenumber **primes) {
 	while(!prime) {
 		guessMem[PRIMESIZE] = 0; //Chance of needing to set less than this to zero is negligible
 		fread(guessMem, sizeof(unsigned int), PRIMESIZE, rand);
-		if(!(guessMem[PRIMESIZE-1] & 0x80000000 && guessMem[PRIMESIZE-1] & 0x40000000)) {
+		/*if(!(guessMem[PRIMESIZE-1] & 0x80000000 && guessMem[PRIMESIZE-1] & 0x40000000)) {
 			continue;
-		}
+		}*/
+		guessMem[PRIMESIZE-1] = guessMem[PRIMESIZE-1] | 0xc0000000; 
+		/* I do this as a way to ensure that the MSB of n is always bigger than typable characters. 
+		 * I understand why this kinda violates the integrity of the random number generator and that 
+		 * I'm doing the block cipher part of this wrong but this is more of a proof of concept than anything else*/
 		guess = initMemLargeNumber(guessMem);
-		// guess is n in a^n-1 = 1 mod n, generate guesses for a
 		prime = 1;
 		int cont = 0;
 		for(int i = 0; i < MAXARRSIZE; i++) {
@@ -85,10 +94,19 @@ largenumber *fermatGeneratePrime(largenumber **primes) {
 			}
 			freeLarge(scratch);
 		}
+		sem_wait(&sem_primes);
+		if(neededPrimes == 0) {
+			freeLarge(guess);
+			guess = 0; //Stop running, two primes found
+			sem_post(&sem_primes);
+			break;
+		}
+		sem_post(&sem_primes);
 		if(cont) {
 			freeLarge(guess);
 			continue;
 		}
+		// guess is n in a^n-1 = 1 mod n, generate guesses for a
 		for(int i = 0; i < fermatRepeat; i++) { //probability of < 2^-10 that this is not prime a^(n-1) = 1 mod n
 			aMem[PRIMESIZE-1] = 0;
 			fread(aMem, sizeof(unsigned int), PRIMESIZE-1, rand);
@@ -110,13 +128,26 @@ largenumber *fermatGeneratePrime(largenumber **primes) {
 		}	
 		if(!prime)
 			freeLarge(guess);
+		sem_wait(&sem_primes);
+		if(neededPrimes == 0) { //Other threads are done
+			guess = 0;
+			prime = 1;
+		}
+		else if(prime) { //One thread finished
+			neededPrimes -= 1; //one thread is done
+		}	
+		sem_post(&sem_primes);
 	}
 	free(aMem);
 	free(guessMem);
 	freeLarge(scratch2);
 	freeLarge(zero);
 	fclose(rand);
-	return guess;
+	if(guess) {
+		return (void *)guess;
+	}
+	else
+		return 0;
 }
 
 unsigned long eulerExt( unsigned long a,  unsigned long b,  unsigned long *x1, unsigned long *y1) {
@@ -185,8 +216,32 @@ char *RSACrypt(char *string, int blocks, int blockSize, largenumber *key) {
 int main() {
 	largenumber **array = calloc(MAXARRSIZE, sizeof(largenumber *));
 	sieve(array); //array now has first MAXARRSIZE primes
-	largenumber *fermat1 = fermatGeneratePrime(array);
-	largenumber *fermat2 = fermatGeneratePrime(array);
+	pthread_t *threadArray = malloc(sizeof(pthread_t)*THREADCOUNT);
+	largenumber *fermat1;
+	largenumber *fermat2;
+	void *res = 0;
+	neededPrimes = 2;
+	sem_init(&sem_primes, 0, 1);
+	if(THREADCOUNT > 1) {
+		for(int i = 0; i < THREADCOUNT; i++) {
+			pthread_create(threadArray+i, NULL, fermatGeneratePrime, array);
+		}
+		for(int i = 0; i < THREADCOUNT; i++) {
+			pthread_join(threadArray[i], &res);
+			if(res && fermat1) {
+				fermat2 = res;
+			}
+			else if(res) {
+				fermat1 = res;
+			}
+		}
+		free(threadArray);
+	}
+	else {
+		fermat1 = (largenumber *)fermatGeneratePrime(array);
+		fermat2 = (largenumber *)fermatGeneratePrime(array);
+	}
+	sem_destroy(&sem_primes);
 	RSAGenerate(fermat1, fermat2);
 	unsigned long blocks = 1;
 	unsigned long fullBlock = sizeof(unsigned int)*PRIMESIZE*2; // Need to solve problem of block plaintext > N
@@ -205,6 +260,7 @@ int main() {
 	}
 	char *encrypted = RSACrypt(plaintext, blocks, fullBlock, e2);
 	printf("Encrypted: %s\n", encrypted);
+	// Maybe one day I'll add multi threading here
 	char *decrypted = RSACrypt(encrypted, blocks, fullBlock, d2);
 	printf("Decrypted: %s\n", decrypted);
 	free(encrypted);

@@ -18,7 +18,7 @@ We know that
 $$n = ax, n,a,x\in \mathbf{Z}\\
 n^2 = a^2x^2\\
 \therefore a | n^2+a$$
-So because we check $n^2+3$,$n^2+7$, and $n^2+13$, we know n cannot be divisible by $3$,$7$, or $13$
+So because we check $n^2+3$, $n^2+7$, and $n^2+13$, we know n cannot be divisible by $3$,$7$, or $13$
 ### Filtering bad guesses
 We now have $7912087$ leftover valid guesses for $n < 150000000$ which is still too much for checking for primes. We can modify the last property we used for filtering to further filter candidates. If we generate a list of primes (which takes $O(nlog(log(n)))$ time) we can begin checking for each prime $p$ and each addend $a \in \{1,3,7,9,13,27\}$  if $((n\%p)^2 +a) \% p\equiv 0$
 This will let us further filter our answers. The actual number of answers that we filter out will vary based on the number of primes $p$ we generate. For $100$ primes, we have further filtered our guesses to a much more reasonable $7497$. From here we can begin actually checking our guesses in-depth.

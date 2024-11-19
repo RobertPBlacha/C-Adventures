@@ -10,11 +10,9 @@ long factorial(long n) {
 
 long power(long n, long e) {
 	long a = 1;
-	long cp;
 	while(e) {
 		if(e&1)
 			a *= n;
-		cp = n;
 		n *= n;
 		e >>= 1;
 	}

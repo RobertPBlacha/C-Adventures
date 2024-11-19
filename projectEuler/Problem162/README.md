@@ -71,11 +71,9 @@ Now we can just implement this algorithm and sum all of the values from lengths 
 
 	long power(long n, long e) {
 	        long a = 1;
-	        long cp;
 	        while(e) {
 	                if(e&1)
 	                        a *= n;
-	                cp = n;
 	                n *= n;
 	                e >>= 1;
 	        }

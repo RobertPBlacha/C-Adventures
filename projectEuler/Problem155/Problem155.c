@@ -12,7 +12,6 @@ capacitor** trees;
 
 void insertCap(unsigned int capacitance1, unsigned int capacitance2, int size, capacitor* node) {
 	if(!trees[size]){
-	//	printf("NEW INSERTING (%u, %u), of size %d\n", capacitance1, capacitance2, size);
 		trees[size] = calloc(1, sizeof(capacitor));
 		trees[size]->capacitance[0] = capacitance1;
 		trees[size]->capacitance[1] = capacitance2;
@@ -24,7 +23,6 @@ void insertCap(unsigned int capacitance1, unsigned int capacitance2, int size, c
 	}
 	else if(node->capacitance[0]*capacitance2 < capacitance1*node->capacitance[1]) {
 		if(!node->right) {
-			//printf("RIGHT INSERTING (%u, %u), of size %d\n", capacitance1, capacitance2, size);
 			node->right = calloc(1, sizeof(capacitor));
 			node->right->size = size;
 			node->right->capacitance[0] = capacitance1;
@@ -36,7 +34,6 @@ void insertCap(unsigned int capacitance1, unsigned int capacitance2, int size, c
 	}
 	else {
 		if(!node->left) {
-			//printf("LEFT INSERTING (%u, %u), of size %d\n", capacitance1, capacitance2, size);
 			node->left = calloc(1, sizeof(capacitor));
 			node->left->size = size;
 			node->left->capacitance[0] = capacitance1;
@@ -68,13 +65,10 @@ unsigned int gcd(unsigned int a, unsigned int b) {
 }
 
 void reduce(unsigned int *num, unsigned int *dec) {
-	if(*dec == 1 || *num == 1)
-		return;
 	unsigned int div;
-	while((div=gcd(*num, *dec)) != 1) {
-		*num /= div;
-		*dec /= div;
-	}
+	div=gcd(*num, *dec);
+	*num /= div;
+	*dec /= div;
 }
 
 void iterate(capacitor *small, capacitor *tree) {
@@ -104,14 +98,12 @@ void combine(capacitor *small, capacitor *large) {
 void recurse(int size) {
 	if(size == 1) {
 		insertCap(1,1,1,trees[1]);
-		printf("size of %d, %ld\n", size, sumTree(trees[size]));
 		return;
 	}
 	recurse(size-1);
 	for(int i = 1; i <= size/2; i++) {
 		combine(trees[i], trees[size-i]);
 	}
-	printf("size of %d, %ld\n", size, sumTree(trees[size]));
 	return;
 }
 void add(capacitor *node) {

@@ -1,4 +1,4 @@
-﻿# Problem 155
+﻿# Problem 162
 ## Prompt 
 In the hexadecimal number system numbers are represented using $16$ different digits: $$1,2,3,4,5,6,7,8,9,A,B,C,D,E,F$$ The hexadecimal number $AF$ when written in the decimal number system equals $10\times16+15=175$.
 

@@ -10,17 +10,17 @@ All of our guesses must be a multiple of 10 for the following reasons.
 #### N must be a multiple of 2
 For $n = 2k+1$, $n^2+1 = 4k^2+4k+1+1 = 4k^2+4k+2$ which is divisible by $2$
 #### N must be a multiple of 5
-For all $n\neq 5k$ $n^2 \% 5\equiv 1$ or $n^2 \% 5 \equiv 4$ 
-We need $n^2+1$ and $n^2+9$ to be prime, so $n^2+1 \% 5 = 0$ or $n^2 + 4 \% 5 = 0$
+For all $n\neq 5k$ $n^2 \mod 5\equiv 1$ or $n^2 \mod 5 \equiv 4$ 
+We need $n^2+1$ and $n^2+9$ to be prime, so $n^2+1 \mod 5 = 0$ or $n^2 + 4 \mod 5 = 0$
 For all $n\neq 5k$ one of $n^2+1$ or $n^2+4$ will be not prime, so $n=5k$
 ### N cannot be divisible by 3,7, or 13
 We know that 
 $$n = ax, n,a,x\in \mathbf{Z}\\
 n^2 = a^2x^2\\
 \therefore a | n^2+a$$
-So because we check $n^2+3$, $n^2+7$, and $n^2+13$, we know n cannot be divisible by $3$,$7$, or $13$
+So because we check $n^2+3$, $n^2+7$, and $n^2+13$, we know n cannot be divisible by $3$, $7$, or $13$
 ### Filtering bad guesses
-We now have $7912087$ leftover valid guesses for $n < 150000000$ which is still too much for checking for primes. We can modify the last property we used for filtering to further filter candidates. If we generate a list of primes (which takes $O(nlog(log(n)))$ time) we can begin checking for each prime $p$ and each addend $a \in \{1,3,7,9,13,27\}$  if $((n\%p)^2 +a) \% p\equiv 0$
+We now have $7912087$ leftover valid guesses for $n < 150000000$ which is still too much for checking for primes. We can modify the last property we used for filtering to further filter candidates. If we generate a list of primes (which takes $O(nlog(log(n)))$ time) we can begin checking for each prime $p$ and each addend $a \in \{1,3,7,9,13,27\}$  if $((n\mod p)^2 +a) \mod p\equiv 0$
 This will let us further filter our answers. The actual number of answers that we filter out will vary based on the number of primes $p$ we generate. For $100$ primes, we have further filtered our guesses to a much more reasonable $7497$. From here we can begin actually checking our guesses in-depth.
 ### Checking if a guess is valid
 We will need to check if our remaining guesses hold the prime property. This can be done simply by taking the last prime $p$ we generated, and checking it against $n^2+a$ for $a\in\{1,3,7,9,13,27\}$. We will then increment $p$ by two until $p^2 > n^2+27$

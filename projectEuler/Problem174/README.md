@@ -1,4 +1,4 @@
-﻿# Problem 173
+﻿# Problem 174
 ## Prompt 
 We shall define a square lamina to be a square outline with a square "hole" so that the shape possesses vertical and horizontal symmetry.
 

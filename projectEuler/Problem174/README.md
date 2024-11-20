@@ -4,6 +4,7 @@ We shall define a square lamina to be a square outline with a square "hole" so t
 
 Given eight tiles it is possible to form a lamina in only one way: $3\times3$ square with a $1\times1$ hole in the middle. However, using thirty-two tiles it is possible to form two distinct laminae.
 ![32 Tile Lamina](https://projecteuler.net/resources/images/0173_square_laminas.gif?1678992055)
+
 If $t$ represents the number of tiles used, we shall say that $t=8$ is type $L(1)$ and $t=32$ is type $L(2)$.
 Let $N(n)$ be the number of $t \leq 1000000$ such that  $t$ is type $L(n)$; for example, $N(15) = 832$.
 

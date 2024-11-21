@@ -40,7 +40,7 @@ $t=pq$ where $p = (n-m)$ and $q = n+m$
 $q-p = n+m-n-(-m) = 2m$
 So then $\frac{q-p}{2} = m$ and $n = q-m$
 Now from a $t$ we can generate guesses for $n, m$ and check with $n^2-m^2 = t$ and $n\mod2=1 \iff m\mod2=1$
-What is especially nice about this method of checking is that no division is necessary, we can check the second condition with $\neg(n\&1 \oplus m\&1)$
+What is especially nice about this method of checking is that no division is necessary, we can check the second condition with $\neg(n$ & $1 \oplus m$ & $1)$
 ## Code
     #include <stdlib.h>
 	#include <stdio.h>

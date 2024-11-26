@@ -4,14 +4,34 @@ Define $f(0) = 1$ and $f(n)$ to be the number of different ways $n$ can be expre
 $2$ using each power no more than twice.
 
 For example, $f(10) = 5$ since there are five different ways to express $10$:
-$$1+1+8 = 10\\1+1+4+4 = 10\\1+1+2+2+4\\2+4+4=10\\2+8=10$$
+
+$1+1+8 = 10$
+
+$1+1+4+4 = 10$
+
+$1+1+2+2+4$
+
+$2+4+4=10$
+
+$2+8=10$
+
 What is $f(10^{25})$?
 ## Methodology  
 ### $10^{25}$ is too big
 From the start we can see that $10^{25}$ is too big to be effectively stored in a long. Our solution will need to be able to calculate this sum without storing the full number, we will keep this in mind for later.
 ### Rewriting the sums
 We can start rewriting the example sums given to us in 'binary', and see a pattern:
-$$1+1+8 = 1002_2\\1+1+4+4 = 0202_2\\1+1+2+2+4 = 0122_2\\2+4+4 = 0210_2\\2+8 = 1010_2$$
+
+$1+1+8 = 1002_2$
+
+$1+1+4+4 = 0202_2$
+
+$1+1+2+2+4 = 0122_2$
+
+$2+4+4 = 0210_2$
+
+$2+8 = 1010_2$
+
 We can see a general pattern where when a one is preceded by a string of zeros it can be decomposed as follows:
 $$100\dots_2 \rightarrow020\dots_2\rightarrow012\dots_2$$
 The first time a power of two gets split, it leaves a zero behind with two of the smaller powers, future splits leave a one behind with two powers of the smaller twos. 
@@ -21,7 +41,16 @@ Where the one is the regular binary representation of the number and the $n$ rep
 ### Combing Patterns
 We can look at the given sums again to see what happens when two patterns of $1(0^n)_2$ are combined
 
-We can see what we can trivially expect, which is multiplying $f(2)*f(2)$: $$1002_2\\1010_2\\0202_2\\0210_2$$
+We can see what we can trivially expect, which is multiplying $f(2)*f(2)$: 
+
+$1002_2$
+
+$1010_2$
+
+$0202_2$
+
+$0210_2$
+
 But there is an interesting case here where there exists the sum $0122_2$, where the expression $012_2$ and $002_2$ are combined. We can think of this as the latter term 'lending' it leading zero to the front term. Because only one solution to the number of representations of $1(0^n)_2$ will end with a $2$ in the least significant digit, this two can be decomposed into the leading zero of the second pattern for every single version of the second pattern that starts with a zero. This is where $0122_2$ comes from.
 
 This means that there will be one extra combination for every representation of the second pattern that starts with zero. This is equal to one less than the size of the chunk.

@@ -28,27 +28,27 @@ Find the sum of all values of $e, 1<e<\phi(1009, 3643)$ and $\gcd(e,\phi) = 1$, 
 
 ## Methodology
 ### Understanding the Problem
-We are asked to sum values of $e$ such that $e$ is in the set $$\argmin_e |\{m | m^e\mod n \equiv m\}|$$ 
+We are asked to sum values of $e$ such that $e$ is in the set $$argmin_e | (m | m^e \mod n \equiv m)|$$  
 We can modify this equation a bit:
-$$m^e \equiv m \mod n\implies\\m^{e-1}\equiv1\mod n$$
+$m^e \equiv m \mod n\implies \\ m^{e-1}\equiv1\mod n$
 ### Focusing our Approach
 We will make an interesting observation. Any element not in the group $\mathbf{Z}^*_n$ will never follow this. Let's examine a brief proof for why this is:
 
-Let $x \notin \mathbf{Z}^*_n$, This implies $\gcd(x,n) \neq 1$. We know that for the message to be unconcealed $x^e \equiv x\implies x\times x^{e-1}\equiv x \mod n\implies x^{e-1}\equiv 1 \mod n \implies x\times x^{e-2} \equiv 1 \mod n$. This implies $x^{e-2}$ is the multiplicative inverse of $x$ under modulo $n$. But we know that there is no multiplicative inverse of $x$ under modulo $n$ because $\gcd(n,x) \neq 1$, so $x\notin \mathbf{Z}^*_n$ such that $x^e \equiv x$ cannot exist. $\blacksquare$
-### Subgroups under $\mathbf{Z}_n^*$
-Now we know that any message that becomes unconcealed for $e, 1 < e < \phi$ must be in $\mathbf{Z}_n^*$. Now the equation $m^{e-1} \equiv 1 \mod n$ should be familiar!
+Let $`x \notin \mathbf{Z}^*_n`$. This implies $`\gcd(x,n) \neq 1`$. We know that for the message to be unconcealed $`x^e \equiv x\implies x\times x^{e-1}\equiv x \mod n\implies x^{e-1}\equiv 1 \mod n \implies x\times x^{e-2} \equiv 1 \mod n`$. This implies $`x^{e-2}`$ is the multiplicative inverse of $`x`$ under modulo $`n`$. But we know that there is no multiplicative inverse of $`x`$ under modulo $`n`$ because $`\gcd(n,x) \neq 1`$, so $`x\notin \mathbf{Z}^*_n`$ such that $`x^e \equiv x`$ cannot exist. $`\blacksquare`$
+### Subgroups under $`\mathbf{Z}_n^*`$
+Now we know that any message that becomes unconcealed for $`e, 1 < e < \phi`$ must be in $`\mathbf{Z}_n^*`$. Now the equation $`m^{e-1} \equiv 1 \mod n`$ should be familiar!
 
-We know that under the group $\mathbf{Z}_n^*$, there are $\phi(\phi(n))$ generators, and that all other numbers fall in some subgroup of $\mathbf{Z}_n^*$. These subgroups are of order $q$ such that $q \in \mathbf{Z}$ and $q = \phi(n) / d$ where $d\in \mathbf{Z}$. This means that an element $m$ in this subgroup follows $m^q = 1$.
+We know that under the group $`\mathbf{Z}_n^*`$, there are $`\phi(\phi(n))`$ generators, and that all other numbers fall in some subgroup of $`\mathbf{Z}_n^*`$. These subgroups are of order $`q`$ such that $`q \in \mathbf{Z`}$ and $`q = \phi(n) / d`$ where $`d\in \mathbf{Z}`$. This means that an element $`m`$ in this subgroup follows $`m^q = 1`$.
 
 We can make the connection that for unconcealed messages $m$, $e-1$ must be equal to  some $kq$ where $k\in\mathbf{Z}$ and $q$ is the order of the subgroup the element $m$ belongs to in $\mathbf{Z}_n^*$. 
 ### Checking e
-Because we know that $q \in \mathbf{Z}$ and $q = \phi(n) / d$, we can reason that $q | \phi(n)$, which means $e-1 | \phi(n)$. This is not enough however because we want to be able to relate how many unconcealed messages one $e$ has relative to another.
+Because we know that $`q \in \mathbf{Z}`$ and $`q = \phi(n) / d`$, we can reason that $`q | \phi(n)`$, which means $`e-1 | \phi(n)`$. This is not enough however because we want to be able to relate how many unconcealed messages one $`e`$ has relative to another.
 
-We can do this by seeing that if $e-1 = q_1\times q_2$, then for both the subgroups corresponding to $q_1$ and $q_2$, $m^e \equiv m$: 
-$$m^{q_1}\equiv 1 \mod n \implies (m^{q_1})^{q_2} \equiv 1 \mod n\\m^{q_2}\equiv 1 \mod n \implies (m^{q_2})^{q_1} \equiv 1 \mod n$$
+We can do this by seeing that if $`e-1 = q_1\times q_2`$, then for both the subgroups corresponding to $`q_1`$ and $`q_2`$, $`m^e \equiv m`$: 
+$`m^{q_1}\equiv 1 \mod n \implies (m^{q_1})^{q_2} \equiv 1 \mod n\\m^{q_2}\equiv 1 \mod n \implies (m^{q_2})^{q_1} \equiv 1 \mod n`$ 
 Effectively, we can see that the more factors $e-1$ shares with $\phi$, the more messages will follow this property, because this corresponds to more subgroups that will all be unconcealed.
 
-Whenever we find a shared factor $q$ of $e-1$ and $\phi$, that shared factor represents a subgroup where $m^{e-1} \equiv m \mod n$, and this subgroup has $q$ elements, allowing us to directly count the number of messages that follow this property for every $e$ without ever actually looking at the messages!
+Whenever we find a shared factor $`q`$ of $`e-1`$ and $`\phi`$, that shared factor represents a subgroup where $`m^{e-1} \equiv m \mod n`$, and this subgroup has $`q`$ elements, allowing us to directly count the number of messages that follow this property for every $`e`$ without ever actually looking at the messages!
 ## Code
 	#include <stdlib.h>
 	#include <stdio.h>

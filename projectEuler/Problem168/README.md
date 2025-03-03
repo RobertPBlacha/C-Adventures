@@ -18,7 +18,7 @@ $5 \times 2 = 0 + 4 = 4$ carry the $1$
 $5 \times 4 = 0 + 1 = 1$ carry the $2$
 $5 \times 1 = 5 + 2 = 7$ carry the $0$
 
-We can see that digit by digit, the multiplication of the factor and the $n$th digit will yield the $(n+1)$th digit. This sequence concludes with yielding the original digit, with a carry of zero.
+We can see that digit by digit, the multiplication of the factor and the $n$ th digit will yield the $(n+1)$ th digit. This sequence concludes with yielding the original digit, with a carry of zero.
 
 We can use this pattern to iterate through the possible last digits and multipliers to efficiently enumerate all right rotation divisors.
 ### The Numbers to Check

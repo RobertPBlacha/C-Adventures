@@ -36,7 +36,7 @@ int genRR(int n0, int n1) {
 
 int main() {
 	for(int i = 1; i < 10; i++)
-		for(int j = 1; j < 10; j++)
+		for(int j = 1; j <= i; j++)
 			genRR(i, j);
 	printf("sum is %d\n", sum);
 }

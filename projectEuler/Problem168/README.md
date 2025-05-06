@@ -11,12 +11,12 @@ From the start we can see that $10^{100}$ is too big to be effectively stored in
 ### Examining the Example
 When we start to verify the equation given to us we can see something interesting: 
 
-$5 \times 7 = 5$, carry the $3$
-$5 \times 5 = 5+3 = 8$ carry the $2$
-$5\times 8 = 0 + 2 = 2$ carry the $4$
-$5 \times 2 = 0 + 4 = 4$ carry the $1$
-$5 \times 4 = 0 + 1 = 1$ carry the $2$
-$5 \times 1 = 5 + 2 = 7$ carry the $0$
+$5 \times 7 = 5$, carry the $3$\\
+$5 \times 5 = 5+3 = 8$ carry the $2$\\
+$5\times 8 = 0 + 2 = 2$ carry the $4$\\
+$5 \times 2 = 0 + 4 = 4$ carry the $1$\\
+$5 \times 4 = 0 + 1 = 1$ carry the $2$\\
+$5 \times 1 = 5 + 2 = 7$ carry the $0$\\
 
 We can see that digit by digit, the multiplication of the factor and the $n$ th digit will yield the $(n+1)$ th digit. This sequence concludes with yielding the original digit, with a carry of zero.
 

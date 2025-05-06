@@ -20,7 +20,7 @@ If you have a large but would like to zero its value with a new size, use the vo
 Larges can be displayed with `displayLargeNum(large *l)`, which will print out the large in hex. All larges will be printed with a leading null 4 bytes, which is meant to show that there will always be more space to add to the large.
 
 ### Storing the Values and Memory Efficiency
-I store the values of a Large using a continuous array of unsigned integers which can be thought of as the digits of the large. I do this because they are the largest values I can atomically multiply with having their results stored in an unsigned long, which is useful for later methods. I also store the number of digits in each Large, which is useful for indexing the digits. I try to automatically resize Larges to prevent them from taking up memory when they don't have to using the smartResize function. One can call the smartResize function directly if they suspect a Large is taking up too much memory, providing it only the large as input. 
+I store the values of a Large using a continuous array of unsigned integers which can be thought of as the digits of the large. I do this because they are the largest values I can atomically multiply with having their results stored in an unsigned long, which is useful for later methods. I also store the number of digits in each Large, which is useful for indexing the digits. I try to automatically resize Larges to prevent them from taking up memory when they don't have to using the `smartResize(large *)` function. One can call the `smartResize(large *)` function directly if they suspect a Large is taking up too much memory, providing it only the large as input. 
 
 ### Larges-Primitive Operations
 #### Mathematical Operations

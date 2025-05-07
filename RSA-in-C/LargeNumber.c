@@ -9,6 +9,7 @@ struct large {
 	unsigned int *num;
 };
 
+typedef struct large large;
 
 void displayLarge(unsigned int *num, int size) {
 	if(size) { 
@@ -19,40 +20,41 @@ void displayLarge(unsigned int *num, int size) {
 		printf("%08x ", 0);
 }
 
-void displayLargeNum(largenumber *large) {
+void displayLargeNum(large *large) {
 	displayLarge(large->num, large->size);
 	printf("\n");
 }
 
-largenumber *initLargeNumber() {
-	largenumber *large = calloc(1, sizeof(largenumber));
-	large->size = 4; //smallest it should ever be
-	large->num = calloc(large->size, sizeof(unsigned int));
-	return large;
+large *initLargeNumber() {
+	large *input = calloc(1, sizeof(large));
+	input->size = 1; //smallest it should ever be
+	input->num = calloc(input->size, sizeof(unsigned int));
+	return input;
 }
-largenumber *initSizedLargeNumber(unsigned int size) {
-	largenumber *large = calloc(1, sizeof(largenumber));
-	large->size = size;
-	large->num = calloc(size, sizeof(unsigned int));
+large *initSizedLargeNumber(unsigned int size) {
+	large *input = calloc(1, sizeof(large));
+	input->size = size;
+	input->num = calloc(size, sizeof(unsigned int));
+	return input;
 }
-largenumber *initMemLargeNumber(unsigned int *arr) {
+large *initMemLargeNumber(unsigned int *arr) {
 	unsigned int i = 0;
 	while(*(arr+i)) //the chance that a random number will contain an all zero unsigned int is 2**-32
 		i += 1;
-	largenumber *l = calloc(1, sizeof(largenumber));
+	large *l = calloc(1, sizeof(large));
 	l->num = calloc(i , sizeof(unsigned int));
 	memcpy(l->num, arr, i*sizeof(unsigned int));
 	l->size = i;
 	return l;
 }
-largenumber *initSizedMemLargeNumber(unsigned int *arr, unsigned int size) {
-	largenumber *l = calloc(1, sizeof(largenumber));
+large *initSizedMemLargeNumber(unsigned int *arr, unsigned int size) {
+	large *l = calloc(1, sizeof(large));
 	l->num = calloc(size , sizeof(unsigned int));
 	memcpy(l->num, arr, size*sizeof(unsigned int));
 	l->size = size;
 	return l;
 }
-largenumber *initvLargeNumber(int arg_count, ...) {
+large *initvLargeNumber(int arg_count, ...) {
 	va_list ap;
 	va_start(ap, arg_count);
 	unsigned int *values = calloc(arg_count+2, sizeof(unsigned int));
@@ -60,55 +62,49 @@ largenumber *initvLargeNumber(int arg_count, ...) {
 		*(values+i) = va_arg(ap, unsigned int);
 	}
 	va_end(ap);
-	largenumber *large = calloc(1, sizeof(largenumber));
-	large->size = arg_count + 2;
-	large->num = values;	
+	large *init = calloc(1, sizeof(large));
+	init->size = arg_count + 2;
+	init->num = values;	
+	return init;
 }
 
-void freeLarge(largenumber *l) {
+void freeLarge(large *l) {
 	free(l->num);
 	free(l);
 }
 
-void resize(largenumber *large, long add) { //Can both scale up and down
-	large->num = realloc(large->num, sizeof(unsigned int) * (large->size + add));
-	unsigned int old = large->size;
-	large->size += add;
+void resize(large *input, long add) { //Can both scale up and down
+	input->num = realloc(input->num, sizeof(unsigned int) * (input->size + add));
+	unsigned int old = input->size;
+	input->size += add;
 	for(int i = old; i < old+add; i++)
-		*(large->num+i) = 0;
+		*(input->num+i) = 0;
 }
 
-void smartResize(largenumber *large) {
-	for(int i = large->size-1; i > 0; i--) {
-		if(*(large->num+i)) {
-			resize(large, i-large->size+1);
+void smartResize(large *input) {
+	for(int i = input->size-1; i > 0; i--) {
+		if(*(input->num+i)) {
+			resize(input, i-input->size+1);
 			break;	
 		}
 	}
 }
-void carryOne(largenumber *large, unsigned int chunk) {//other functions should call resize before calling this one so there WILL be space
-	unsigned int before = *(large->num+chunk);
-	*(large->num+chunk) = before + 1;
-	if(before > *(large->num+chunk)) 
-		carryOne(large, chunk+1);
-}
-largenumber *copyLarge(largenumber *large) {
-	largenumber *res = calloc(1, sizeof(largenumber));
-	res->num = calloc(large->size, sizeof(unsigned int));
-	memcpy(res->num, large->num, large->size * sizeof(unsigned int));
-	res->size = large->size;
-	return res;
+void carryOne(large *input, unsigned int chunk) {//other functions should call resize before calling this one so there WILL be space
+	unsigned int before = *(input->num+chunk);
+	*(input->num+chunk) = before + 1;
+	if(before > *(input->num+chunk)) 
+		carryOne(input, chunk+1);
 }
 
-void addLargeNumber(largenumber *large, unsigned long add) {
-	if (*(unsigned long *)(large->num+large->size-2)) { //check last two byte to be sure, 
-		resize(large, 2); //No more than two needed
+void addLargeNumber(large *input, unsigned long add) {
+	if (*(unsigned long *)(input->num+input->size-2)) { //check last two byte to be sure, 
+		resize(input, 2); //No more than two needed
 	}
-	unsigned long least8 = *(unsigned long *)(large->num);
+	unsigned long least8 = *(unsigned long *)(input->num);
 	unsigned long newLeast8 = least8 + add;
 	if(newLeast8 < least8) //handle overflows
-		carryOne(large, 2);
-	*(unsigned long *)(large->num) = newLeast8;
+		carryOne(input, 2);
+	*(unsigned long *)(input->num) = newLeast8;
 }
 
 unsigned int determineSize(unsigned int mult) {
@@ -125,7 +121,7 @@ unsigned int determineSize(unsigned int mult) {
 		return res;
 }
 
-void addTwoLargeNumbers(largenumber *addend, largenumber *addto) {
+void addTwoLargeNumbers(large *addend, large *addto) {
 	if(addend->size < addto->size)
 		resize(addend, addto->size - addend->size);
 	unsigned long cursor = 0;
@@ -136,7 +132,7 @@ void addTwoLargeNumbers(largenumber *addend, largenumber *addto) {
 		carry = (unsigned int)(cursor>>32);
 	}
 }	
-void subLargeNumber(largenumber *addend, unsigned int sub) {
+void subLargeNumber(large *addend, unsigned int sub) {
 	unsigned int cursor = 0;
 	for(unsigned int i = 0; i < addend->size; i++) {
 		cursor = *(addend->num+i) - sub;
@@ -150,7 +146,7 @@ void subLargeNumber(largenumber *addend, unsigned int sub) {
 		}
 	}
 }
-void subTwoLargeNumbers(largenumber *addend, largenumber *addto) { // Just assumes addend > addto
+void subTwoLargeNumbers(large *addend, large *addto) { // Just assumes addend > addto
 	unsigned int cursor = 0;
 	smartResize(addend);
 	smartResize(addto);
@@ -162,51 +158,51 @@ void subTwoLargeNumbers(largenumber *addend, largenumber *addto) { // Just assum
 		*(addend->num+i) = cursor;
 	}
 }
-void multiplyLargeNumber(largenumber *large, unsigned int mult) {
-	resize(large, determineSize(mult));
+void multiplyLargeNumber(large *input, unsigned int mult) {
+	resize(input, determineSize(mult));
 	unsigned long multiplicationCursor = 0;
 	unsigned int new = 0;
 	unsigned int carry = 0; //The product of two numbers <2^32 will be bounded by 2^64, but adding the carry to the next number could overflow, need to fix
-	for(int i = 0; *(large->num + i) || carry; i++) {
-		multiplicationCursor = (unsigned long)*(large->num+i) * (unsigned long)mult;
-		*(large->num+i) = (unsigned int)multiplicationCursor + carry;
+	for(int i = 0; *(input->num + i) || carry; i++) {
+		multiplicationCursor = (unsigned long)*(input->num+i) * (unsigned long)mult;
+		*(input->num+i) = (unsigned int)multiplicationCursor + carry;
 		carry = (unsigned int)(multiplicationCursor >> 32);
-		if(*(large->num+i) < (unsigned int)multiplicationCursor)
+		if(*(input->num+i) < (unsigned int)multiplicationCursor)
 			carry += 1; //Carry will be at most fffffffe, so adding one has 0 chance of overflow
 	}
 }
 
-void zeroLargeNumber(largenumber *large, unsigned int size) { 
-	free(large->num);
-	large->num = calloc(size, sizeof(unsigned int));
-	if(!large->num) {
+void zeroLargeNumber(large *input, unsigned int size) { 
+	free(input->num);
+	input->num = calloc(size, sizeof(unsigned int));
+	if(!input->num) {
 		printf("Memerror, exiting\n");
 		exit(1);
 	}
-	large->size = size;
+	input->size = size;
 }
 
-void shiftLargeNumber(largenumber *large, unsigned int amount) {
-	resize(large, amount);
-	for(unsigned int i = large->size - 1; i-amount != -1; i--) {
-		*(large->num+i) = *(large->num+i - amount);
+void shiftLargeNumber(large *input, unsigned int amount) {
+	resize(input, amount);
+	for(unsigned int i = input->size - 1; i-amount != -1; i--) {
+		*(input->num+i) = *(input->num+i - amount);
 	}
 	for(unsigned int i = amount-1; i != -1; i--) {
-		*(large->num+i) = 0;
+		*(input->num+i) = 0;
 	}
 }
-void shiftDownLargeNumber(largenumber *large, unsigned int amount) {
-	for(unsigned int i = 0; i+amount != large->size; i++) {
-		*(large->num+i) = *(large->num+i + amount);
+void shiftDownLargeNumber(large *input, unsigned int amount) {
+	for(unsigned int i = 0; i+amount != input->size; i++) {
+		*(input->num+i) = *(input->num+i + amount);
 	}
-	for(unsigned int i = amount; i != large->size; i++) {
-		*(large->num+i) = 0;
+	for(unsigned int i = amount; i != input->size; i++) {
+		*(input->num+i) = 0;
 	}
-	resize(large, -1 * amount);
+	resize(input, -1 * amount);
 }
-largenumber *multiplyTwoLargeNumbers(largenumber *base, largenumber *factor) {
-	largenumber *l = initSizedLargeNumber(base->size+factor->size); //Theoretically could cause overflow but unlikely for the sizes I'm going to use this library for
-	largenumber *res = initSizedLargeNumber(base->size + factor->size);
+large *multiplyTwoLargeNumbers(large *base, large *factor) {
+	large *l = initSizedLargeNumber(base->size+factor->size); //Theoretically could cause overflow but unlikely for the sizes I'm going to use this library for
+	large *res = initSizedLargeNumber(base->size + factor->size);
 	//Naive Multiplication, should change later to something not O(n^2)
 	unsigned long resL = 0;
 	for(unsigned int i = 0; i < base->size; i++) {
@@ -222,7 +218,7 @@ largenumber *multiplyTwoLargeNumbers(largenumber *base, largenumber *factor) {
 	smartResize(res);
 	return res;
 }
-int equalsLarge(largenumber *l, largenumber *l2) {
+int equalsLarge(large *l, large *l2) {
 	if(l->size < l2->size)
 		return equalsLarge(l2, l);
 	for(int i = 0; i < l2->size; i++) {
@@ -232,7 +228,7 @@ int equalsLarge(largenumber *l, largenumber *l2) {
 	}
 	return l->size == l2->size || (l->size > l2->size && !*(l->num+l2->size));
 }
-int greaterThanLarge(largenumber *l, largenumber *l2) {
+int greaterThanLarge(large *l, large *l2) {
 	smartResize(l);
 	smartResize(l2);
 	if(l->size < l2->size) 
@@ -253,7 +249,7 @@ int greaterThanLarge(largenumber *l, largenumber *l2) {
 	}
 	return 0;
 }	
-void granularShiftDown(largenumber *l, unsigned int i) { //shifts by chars
+void granularShiftDown(large *l, unsigned int i) { //shifts by chars
 	char *cast = (char *)(l->num);
 	unsigned int total = sizeof(unsigned int) * (l->size);
 	char * a = malloc(total);
@@ -263,7 +259,7 @@ void granularShiftDown(largenumber *l, unsigned int i) { //shifts by chars
 	*(cast+total-1)=0;
 	smartResize(l);
 }
-void granularShiftUp(largenumber *l, unsigned int i) { //shifts by chars
+void granularShiftUp(large *l, unsigned int i) { //shifts by chars
 	if(*(l->num+l->size-1)) {
 		resize(l, 1);
 	}
@@ -277,15 +273,15 @@ void granularShiftUp(largenumber *l, unsigned int i) { //shifts by chars
         	*(cast+j)=0;
 	}
 }
-void setLargeEqual(largenumber *dest, largenumber *src) {
+void setLargeEqual(large *dest, large *src) {
 	free(dest->num);
 	dest->num = calloc(src->size, sizeof(unsigned int));
 	memcpy(dest->num, src->num, sizeof(unsigned int) * src->size);
 	dest->size = src->size;
 }
-largenumber *modTwoLargeNumbers(largenumber *l, largenumber *mod) {
-	largenumber *c = copyLarge(l); 
-	largenumber *modC = copyLarge(mod);
+large *modTwoLargeNumbers(large *l, large *mod) {
+	large *c = copyLarge(l); 
+	large *modC = copyLarge(mod);
 	while(greaterThanLarge(c, modC)) {
 		shiftLargeNumber(modC, 1); //mod = mod*2^32 until they are within the same block
 	}	
@@ -303,11 +299,11 @@ largenumber *modTwoLargeNumbers(largenumber *l, largenumber *mod) {
 	freeLarge(modC);
 	return c;
 }
-largenumber *divTwoLargeNumbers(largenumber *l, largenumber *mod) {
-        largenumber *c = copyLarge(l);
-        largenumber *modC = copyLarge(mod);
-	largenumber *ret = initLargeNumber();
-	largenumber *zero = initLargeNumber();
+large *divTwoLargeNumbers(large *l, large *mod) {
+        large *c = copyLarge(l);
+        large *modC = copyLarge(mod);
+	large *ret = initLargeNumber();
+	large *zero = initLargeNumber();
 	unsigned long shift = 0;
         while(greaterThanLarge(c, modC)) {
                 shiftLargeNumber(modC, 1); //mod = mod*2^32 until they are within the same block
@@ -338,12 +334,12 @@ largenumber *divTwoLargeNumbers(largenumber *l, largenumber *mod) {
         return ret;
 }
 
-largenumber *largeModPow(largenumber *l, largenumber *pow, largenumber *mod) {	
-	largenumber *res = initvLargeNumber(2, 0x1, 0);
-	largenumber *powC = copyLarge(pow);
-	largenumber *lC = copyLarge(l);
-	largenumber *zero = initLargeNumber();
-	largenumber *work;
+large *largeModPow(large *l, large *pow, large *mod) {	
+	large *res = initvLargeNumber(2, 0x1, 0);
+	large *powC = copyLarge(pow);
+	large *lC = copyLarge(l);
+	large *zero = initLargeNumber();
+	large *work;
 	unsigned char LSC;
 	work = modTwoLargeNumbers(lC, mod);
 	setLargeEqual(lC, work);
@@ -376,15 +372,15 @@ largenumber *largeModPow(largenumber *l, largenumber *pow, largenumber *mod) {
 	freeLarge(zero);
 	return res;
 }
-void eulerExtended(largenumber *a, largenumber *b, largenumber **x, largenumber **y, largenumber *zero, largenumber *mod) { //zero used for checks
+void eulerExtended(large *a, large *b, large **x, large **y, large *zero, large *mod) { //zero used for checks
 	if(equalsLarge(zero, a)) {
 		*x = initvLargeNumber(1, 0);
 		*y = initvLargeNumber(1, 1);
 		return;
 	}
-	largenumber *x1, *y1;
-	largenumber *b2 = modTwoLargeNumbers(b, a);
-	largenumber *scratch;
+	large *x1, *y1;
+	large *b2 = modTwoLargeNumbers(b, a);
+	large *scratch;
 	eulerExtended(b2, a, &x1, &y1, zero, mod); // now x1 and y1 have values
 	freeLarge(b2);
 	b2 = divTwoLargeNumbers(b, a);
@@ -404,7 +400,7 @@ void eulerExtended(largenumber *a, largenumber *b, largenumber **x, largenumber 
 	freeLarge(x1);
 	freeLarge(y1);
 }
-unsigned long byteSize(largenumber *n) {
+unsigned long byteSize(large *n) {
 	smartResize(n); //guarantees n has value /kinda/
 	int mask = 0x80000000;
 	int bytes = 4;
@@ -417,18 +413,25 @@ unsigned long byteSize(largenumber *n) {
 		       bytes -= 1;	
 	}
 }
-char *charRep(largenumber *a, int blockSize) {
+char *charRep(large *a, int blockSize) {
 	if(a->size < 1+blockSize/4) {
 		resize(a, 1+blockSize/4 - a->size);
 	}
 	return (char *)a->num;
 }
-largenumber *modInv(largenumber *e, largenumber *mod) { //Assumes whatever you send it has a mod inv
-	largenumber *x = initLargeNumber();
-	largenumber *y = initLargeNumber();
-	largenumber *z = initLargeNumber();
+large *modInv(large *e, large *mod) { //Assumes whatever you send it has a mod inv
+	large *x = initLargeNumber();
+	large *y = initLargeNumber();
+	large *z = initLargeNumber();
 	eulerExtended(e, mod, &x, &y, z, mod);
 	freeLarge(y);
 	freeLarge(z);
 	return x;
+}
+large *copyLarge(large *copy) {
+	large *res = calloc(1, sizeof(large));
+	res->num = calloc(copy->size, sizeof(unsigned int));
+	memcpy(res->num, copy->num, copy->size * sizeof(unsigned int));
+	res->size = copy->size;
+	return res;
 }

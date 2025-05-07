@@ -7,19 +7,18 @@
 #define MAXARRSIZE 1000
 #define THREADCOUNT 8
 #define PRIMESIZE 16
-#define CIPHERSIZE 100
 #define fermatRepeat 10
 
 unsigned long n, e, d;
 sem_t sem_primes;
 int neededPrimes;
-largenumber * n2, *e2, *d2;
-void sieve(largenumber **array) {
-	largenumber** empty = array;
-	largenumber *check = initvLargeNumber(1, 1); // = 1
+large * n2, *e2, *d2;
+void sieve(large **array) {
+	large** empty = array;
+	large *check = initvLargeNumber(1, 1); // = 1
 	char prime;
-	largenumber *zero = initLargeNumber();
-	largenumber *scratch;
+	large *zero = initLargeNumber();
+	large *scratch;
 	int count = 0;
 	while((empty-array)+1 < MAXARRSIZE) { //exit loop when first primes found and array is filled
 		empty = array; // start loop at first prime
@@ -62,15 +61,15 @@ unsigned long modPow(unsigned long a, unsigned long no, unsigned long mod) {
 }
 
 void *fermatGeneratePrime(void *primesPTR) {
-	largenumber **primes = (largenumber **)primesPTR;
+	large **primes = (large **)primesPTR;
 	FILE *rand = fopen("/dev/urandom", "r");
 	int prime = 0;
-	largenumber *zero = initLargeNumber();
-	largenumber *a;
+	large *zero = initLargeNumber();
+	large *a;
 	unsigned int *aMem = calloc(PRIMESIZE, sizeof(unsigned int));
-	largenumber *scratch, *scratch2 = initLargeNumber();
+	large *scratch, *scratch2 = initLargeNumber();
 	unsigned int *guessMem = calloc(PRIMESIZE+1, sizeof(unsigned int));
-	largenumber *guess;
+	large *guess;
 	while(!prime) {
 		guessMem[PRIMESIZE] = 0; //Chance of needing to set less than this to zero is negligible
 		fread(guessMem, sizeof(unsigned int), PRIMESIZE, rand);
@@ -94,14 +93,11 @@ void *fermatGeneratePrime(void *primesPTR) {
 			}
 			freeLarge(scratch);
 		}
-		sem_wait(&sem_primes);
 		if(neededPrimes == 0) {
 			freeLarge(guess);
 			guess = 0; //Stop running, two primes found
-			sem_post(&sem_primes);
 			break;
 		}
-		sem_post(&sem_primes);
 		if(cont) {
 			freeLarge(guess);
 			continue;
@@ -126,10 +122,15 @@ void *fermatGeneratePrime(void *primesPTR) {
 			freeLarge(scratch);
 			freeLarge(a);
 		}	
-		if(!prime)
+		if(!prime) { 
 			freeLarge(guess);
+			guess = 0;
+			if(neededPrimes == 0)
+				break;
+		}
 		sem_wait(&sem_primes);
 		if(neededPrimes == 0) { //Other threads are done
+			freeLarge(guess);
 			guess = 0;
 			prime = 1;
 		}
@@ -174,12 +175,12 @@ unsigned long modInvPrimitive(unsigned long a, unsigned long m) {
 	return res;
 }
 
-void RSAGenerate(largenumber *q, largenumber *p) {
+void RSAGenerate(large *q, large *p) {
 	// both p and q are going to be < 2^32, therefore their product will be < 2^64
 	n2= multiplyTwoLargeNumbers(p, q);
 	subLargeNumber(p, 1);
 	subLargeNumber(q, 1);
-	largenumber *totn = multiplyTwoLargeNumbers(p, q);
+	large *totn = multiplyTwoLargeNumbers(p, q);
 	e2 = initvLargeNumber(1, 65537);
 	d2 = modInv(e2, totn);
 	addLargeNumber(p,1);
@@ -196,29 +197,30 @@ void RSAGenerate(largenumber *q, largenumber *p) {
 	displayLargeNum(n2);
 }
 
-char *RSACrypt(char *string, int blocks, int blockSize, largenumber *key) {
-	// Change to largenumber *
+char *RSACrypt(char *string, int blocks, int blockSize, large *key) {
+	// Change to large *
 	char *res = calloc(blocks+1, blockSize); //+1 handles null termination
 	int i = 0;
 	while(i < blocks) {
-		largenumber *l = initSizedMemLargeNumber((unsigned int *)(string+(i*blockSize)), blockSize/sizeof(unsigned int));
-		largenumber *write = largeModPow(l, key, n2);
+		large *l = initSizedMemLargeNumber((unsigned int *)(string+(i*blockSize)), blockSize/sizeof(unsigned int));
+		large *write = largeModPow(l, key, n2);
 		char *stringWriter = charRep(write, blockSize);
 		memcpy(res+i*blockSize, stringWriter, blockSize);
 		i += 1;
 		freeLarge(write);
-		free(l);
+		freeLarge(l);
 	}
 	
 	return res;
 }
 
 int main() {
-	largenumber **array = calloc(MAXARRSIZE, sizeof(largenumber *));
+	printf("GENERATING PRIMES, this may take a while\n");
+	large **array = calloc(MAXARRSIZE, sizeof(large *));
 	sieve(array); //array now has first MAXARRSIZE primes
 	pthread_t *threadArray = malloc(sizeof(pthread_t)*THREADCOUNT);
-	largenumber *fermat1;
-	largenumber *fermat2;
+	large *fermat1 = NULL;
+	large *fermat2 = NULL;
 	void *res = 0;
 	neededPrimes = 2;
 	sem_init(&sem_primes, 0, 1);
@@ -238,12 +240,13 @@ int main() {
 		free(threadArray);
 	}
 	else {
-		fermat1 = (largenumber *)fermatGeneratePrime(array);
-		fermat2 = (largenumber *)fermatGeneratePrime(array);
+		fermat1 = (large *)fermatGeneratePrime(array);
+		fermat2 = (large *)fermatGeneratePrime(array);
 	}
 	sem_destroy(&sem_primes);
 	RSAGenerate(fermat1, fermat2);
 	unsigned long blocks = 1;
+	printf("ENTER MESSAGE:\n");
 	unsigned long fullBlock = sizeof(unsigned int)*PRIMESIZE*2; // Need to solve problem of block plaintext > N
 	char *plaintext = calloc(sizeof(unsigned int), fullBlock + 1); //need +1 because of fgets null terminate
 	plaintext = fgets(plaintext, fullBlock+1, stdin);

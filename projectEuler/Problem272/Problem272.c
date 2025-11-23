@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <primesieve.h>
 #include <pthread.h>
 
 #define THREAD_COUNT 20

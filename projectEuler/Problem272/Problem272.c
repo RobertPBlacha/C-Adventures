@@ -16,7 +16,7 @@ unsigned long size_table[THREAD_COUNT + 1];
 void *segment(void *input) {
 	char *c = malloc(segment_size* sizeof(char));
 	unsigned long size2 = 0;
-	unsigned long total2 = 20000;
+	unsigned long total2 = 70000;
 	unsigned long *interesting = malloc(total2 * sizeof(unsigned long));
 	unsigned long start = (unsigned long)input;
 	unsigned long tr; 
@@ -42,7 +42,7 @@ void *segment(void *input) {
 			}
 		}
 		for(int j = 0; j < segment_size && tr + j < max; j++) {
-			if(tr+j<2lu)
+			if(tr+j<2)
 				continue;
 			if(!c[j]) {
 				if((tr+j-1)%3==0){
@@ -74,9 +74,9 @@ void *find(void *i) {
 		tr = start * segment_size;
 		start += THREAD_COUNT;
 		for(int j = 0; j < THREAD_COUNT + 1; j++) {
-			for(int k = 0; k < size_table[j] && iprimes[j][k] < (tr + segment_size); k++) {
+			for(int k = 0; k < size_table[j] && iprimes[j][k] <= (tr + segment_size)/(9*7*13*19); k++) {
 				ind = iprimes[j][k] - tr % iprimes[j][k];
-				if(ind == iprimes[j][k])
+				if( ind == iprimes[j][k])
 					ind = 0;
 				for(unsigned long l = ind; l < segment_size; l += iprimes[j][k]) {
 					c[l] <<= 1;
@@ -93,13 +93,13 @@ void *find(void *i) {
 	return (void *)(ans);
 }
 
-void genPrimes() {
-	unsigned long t = 10000;
+int main() {
+	// First generate all primes < sqrt(10^11), I do this slowly because it is small enough to not matter
+	unsigned long t = 30000;
 	aprimes = malloc(t * sizeof(unsigned long));
 	unsigned long s = 1;
 	int add;
 	aprimes[0] = 2;
-	// generate first segment slowly
 	for(unsigned long i = 3; i*i < max;i+=2){
 		add = 1;
 		for(int j = 0; j < s; j++) {
@@ -120,7 +120,7 @@ void genPrimes() {
 	aprimes = realloc(aprimes, s*sizeof(unsigned long));
 	tdivprimes = s;
 
-	pthread_t threads[THREAD_COUNT];
+	pthread_t *threads = malloc(sizeof(pthread_t)*THREAD_COUNT);
 
 	// for every segment
 	for(long i = 0; i < THREAD_COUNT; i++) {
@@ -145,14 +145,15 @@ void genPrimes() {
 	for(int i = 0; i < THREAD_COUNT; i++) {
 		pthread_join(threads[i], (void *)&ans[i]);
 	}
+	free(threads);
+
 	unsigned long total = 0;
 
 	for(int i = 0; i < THREAD_COUNT; i++) {
 		total += ans[i];
+		free(iprimes[i]);
 	}
 	printf("ANSWER: %lu\n", total);
+	return 0;
 }
 
-unsigned int main() {
-	genPrimes();
-}

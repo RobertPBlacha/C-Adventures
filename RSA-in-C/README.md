@@ -1,5 +1,5 @@
 # RSA Key-Gen In C  
-https://web.njit.edu/~rb97/ifYouP.html
+https://youtu.be
 As a programmatic test of strength I wanted to create an RSA key generator in C using nothing but the the standard libraries, string, and pthread libraries. To accomplish this I also implemented a library in C that will handle unsigned integers of arbitrary length. I want to eventually output the values into a PEM format, but for now they are just presented in hex, which was the simpler display method. Below is a description of how to use the library and the key-gen.
 
 ## The LargeNumber Library
